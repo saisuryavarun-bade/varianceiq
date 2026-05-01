@@ -1,0 +1,79 @@
+date,period,department,account,vendor,amount,memo
+2025-07-22,2025-07,Marketing,Paid Search - Non-Brand,Google Ads - Generic Keywords,70079.69,Campaign: generic health SaaS terms
+2025-07-15,2025-07,Marketing,Paid Search - Non-Brand,Google Ads - Competitor Keywords,23972.37,Campaign: competitor conquest
+2025-07-15,2025-07,Marketing,Paid Search - Non-Brand,Bing Ads,8852.39,Campaign: cross-platform
+2025-07-08,2025-07,Marketing,Paid Search - Non-Brand,Reddit Ads,5519.94,Campaign: r/healthtech sponsored
+2025-07-01,2025-07,Marketing,Paid Search - Non-Brand,LinkedIn Ads,4510.2,Campaign: decision-maker targeting
+2025-08-08,2025-08,Marketing,Paid Search - Non-Brand,Google Ads - Generic Keywords,83235.97,Campaign: generic health SaaS terms
+2025-08-01,2025-08,Marketing,Paid Search - Non-Brand,Google Ads - Competitor Keywords,27611.35,Campaign: competitor conquest
+2025-08-21,2025-08,Marketing,Paid Search - Non-Brand,Bing Ads,10513.42,Campaign: cross-platform
+2025-08-03,2025-08,Marketing,Paid Search - Non-Brand,Reddit Ads,6797.39,Campaign: r/healthtech sponsored
+2025-08-28,2025-08,Marketing,Paid Search - Non-Brand,LinkedIn Ads,5314.84,Campaign: decision-maker targeting
+2025-09-17,2025-09,Marketing,Paid Search - Non-Brand,Google Ads - Generic Keywords,89114.42,Campaign: generic health SaaS terms
+2025-09-22,2025-09,Marketing,Paid Search - Non-Brand,Google Ads - Competitor Keywords,30485.79,Campaign: competitor conquest
+2025-09-18,2025-09,Marketing,Paid Search - Non-Brand,Bing Ads,11449.51,Campaign: cross-platform
+2025-09-30,2025-09,Marketing,Paid Search - Non-Brand,Reddit Ads,7373.85,Campaign: r/healthtech sponsored
+2025-09-19,2025-09,Marketing,Paid Search - Non-Brand,LinkedIn Ads,5803.86,Campaign: decision-maker targeting
+2025-07-26,2025-07,G&A,Legal Fees,Wilson Sonsini,1333.58,General counsel retainer
+2025-07-14,2025-07,G&A,Legal Fees,Cooley LLP,23205.51,Vendor dispute settlement
+2025-07-04,2025-07,G&A,Legal Fees,USPTO,1074.81,Trademark filing
+2025-07-12,2025-07,G&A,Legal Fees,Fisher Phillips,798.57,Employment law consultation
+2025-08-15,2025-08,G&A,Legal Fees,Wilson Sonsini,4565.51,General counsel retainer
+2025-08-02,2025-08,G&A,Legal Fees,Cooley LLP,79749.63,Vendor dispute settlement
+2025-08-21,2025-08,G&A,Legal Fees,USPTO,3542.19,Trademark filing
+2025-08-13,2025-08,G&A,Legal Fees,Fisher Phillips,2724.66,Employment law consultation
+2025-09-26,2025-09,G&A,Legal Fees,Wilson Sonsini,1555.81,General counsel retainer
+2025-09-08,2025-09,G&A,Legal Fees,Cooley LLP,26658.72,Vendor dispute settlement
+2025-09-18,2025-09,G&A,Legal Fees,USPTO,1224.37,Trademark filing
+2025-09-14,2025-09,G&A,Legal Fees,Fisher Phillips,908.52,Employment law consultation
+2025-07-15,2025-07,Engineering,Engineering Contractors,Toptal - Sr Backend Dev,40818.32,Backfill for Req #ENG-204
+2025-07-30,2025-07,Engineering,Engineering Contractors,Andela - Sr ML Engineer,33610.79,Backfill for Req #ENG-211
+2025-07-26,2025-07,Engineering,Engineering Contractors,Independent - Frontend,18363.03,React migration sprint
+2025-07-18,2025-07,Engineering,Engineering Contractors,NCC Group,6926.21,SOC 2 renewal audit
+2025-08-21,2025-08,Engineering,Engineering Contractors,Toptal - Sr Backend Dev,47650.4,Backfill for Req #ENG-204
+2025-08-27,2025-08,Engineering,Engineering Contractors,Andela - Sr ML Engineer,37989.29,Backfill for Req #ENG-211
+2025-08-03,2025-08,Engineering,Engineering Contractors,Independent - Frontend,20859.87,React migration sprint
+2025-08-28,2025-08,Engineering,Engineering Contractors,NCC Group,7892.03,SOC 2 renewal audit
+2025-09-14,2025-09,Engineering,Engineering Contractors,Toptal - Sr Backend Dev,49247.11,Backfill for Req #ENG-204
+2025-09-07,2025-09,Engineering,Engineering Contractors,Andela - Sr ML Engineer,41458.56,Backfill for Req #ENG-211
+2025-09-29,2025-09,Engineering,Engineering Contractors,Independent - Frontend,21251.18,React migration sprint
+2025-09-13,2025-09,Engineering,Engineering Contractors,NCC Group,8245.34,SOC 2 renewal audit
+2025-07-13,2025-07,Engineering,AWS Hosting,AWS EC2 Compute,64999.69,us-east-1 production cluster
+2025-07-26,2025-07,Engineering,AWS Hosting,AWS RDS Postgres,33182.16,Primary database
+2025-07-10,2025-07,Engineering,AWS Hosting,AWS S3 Storage,17132.2,Object storage + backups
+2025-07-31,2025-07,Engineering,AWS Hosting,AWS Data Transfer,22073.65,Egress charges
+2025-07-26,2025-07,Engineering,AWS Hosting,AWS Other,18789.23,"Lambda, CloudWatch, misc"
+2025-08-23,2025-08,Engineering,AWS Hosting,AWS EC2 Compute,69447.68,us-east-1 production cluster
+2025-08-07,2025-08,Engineering,AWS Hosting,AWS RDS Postgres,34459.85,Primary database
+2025-08-31,2025-08,Engineering,AWS Hosting,AWS S3 Storage,17876.98,Object storage + backups
+2025-08-24,2025-08,Engineering,AWS Hosting,AWS Data Transfer,23200.67,Egress charges
+2025-08-24,2025-08,Engineering,AWS Hosting,AWS Other,19704.76,"Lambda, CloudWatch, misc"
+2025-09-02,2025-09,Engineering,AWS Hosting,AWS EC2 Compute,74844.74,us-east-1 production cluster
+2025-09-17,2025-09,Engineering,AWS Hosting,AWS RDS Postgres,37922.46,Primary database
+2025-09-17,2025-09,Engineering,AWS Hosting,AWS S3 Storage,19268.71,Object storage + backups
+2025-09-17,2025-09,Engineering,AWS Hosting,AWS Data Transfer,24446.91,Egress charges
+2025-09-06,2025-09,Engineering,AWS Hosting,AWS Other,20944.62,"Lambda, CloudWatch, misc"
+2025-07-03,2025-07,Sales,Sales Commissions,Q3 Commissions - Enterprise,103600.89,Enterprise segment payout
+2025-07-08,2025-07,Sales,Sales Commissions,Q3 Commissions - Mid-Market,50310.27,Mid-market segment payout
+2025-07-31,2025-07,Sales,Sales Commissions,Q3 Commissions - SMB,20897.19,SMB segment payout
+2025-07-08,2025-07,Sales,Sales Commissions,Q3 SPIFFs & Accelerators,13135.13,Quota attainment accelerators
+2025-08-02,2025-08,Sales,Sales Commissions,Q3 Commissions - Enterprise,107952.05,Enterprise segment payout
+2025-08-14,2025-08,Sales,Sales Commissions,Q3 Commissions - Mid-Market,53074.8,Mid-market segment payout
+2025-08-19,2025-08,Sales,Sales Commissions,Q3 Commissions - SMB,21507.38,SMB segment payout
+2025-08-30,2025-08,Sales,Sales Commissions,Q3 SPIFFs & Accelerators,13543.2,Quota attainment accelerators
+2025-09-22,2025-09,Sales,Sales Commissions,Q3 Commissions - Enterprise,117690.73,Enterprise segment payout
+2025-09-08,2025-09,Sales,Sales Commissions,Q3 Commissions - Mid-Market,56743.09,Mid-market segment payout
+2025-09-05,2025-09,Sales,Sales Commissions,Q3 Commissions - SMB,23496.61,SMB segment payout
+2025-09-10,2025-09,Sales,Sales Commissions,Q3 SPIFFs & Accelerators,14824.99,Quota attainment accelerators
+2025-07-30,2025-07,Marketing,Conferences & Events,HIMSS 2025,39528.95,Sponsorship booth + travel (moved from Q4)
+2025-07-03,2025-07,Marketing,Conferences & Events,ViVE Healthcare Conf,6484.49,Registration + travel
+2025-07-20,2025-07,Marketing,Conferences & Events,HLTH Conference,5621.83,Registration
+2025-07-04,2025-07,Marketing,Conferences & Events,Local Meetups,3792.49,Dinners and community events
+2025-08-07,2025-08,Marketing,Conferences & Events,HIMSS 2025,66933.64,Sponsorship booth + travel (moved from Q4)
+2025-08-05,2025-08,Marketing,Conferences & Events,ViVE Healthcare Conf,11506.07,Registration + travel
+2025-08-29,2025-08,Marketing,Conferences & Events,HLTH Conference,9262.49,Registration
+2025-08-08,2025-08,Marketing,Conferences & Events,Local Meetups,6563.11,Dinners and community events
+2025-09-06,2025-09,Marketing,Conferences & Events,HIMSS 2025,42216.92,Sponsorship booth + travel (moved from Q4)
+2025-09-18,2025-09,Marketing,Conferences & Events,ViVE Healthcare Conf,7211.18,Registration + travel
+2025-09-20,2025-09,Marketing,Conferences & Events,HLTH Conference,6076.15,Registration
+2025-09-26,2025-09,Marketing,Conferences & Events,Local Meetups,4198.25,Dinners and community events

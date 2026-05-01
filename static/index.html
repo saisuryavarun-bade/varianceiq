@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VarianceIQ — Autonomous FP&A Variance Investigation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+  <header class="masthead">
+    <div class="masthead__inner">
+      <a class="masthead__logo" href="/">
+        <span class="logo-mark"></span>
+        <span class="logo-word">VarianceIQ</span>
+      </a>
+      <nav class="masthead__nav">
+        <span class="nav-tag">Autonomous FP&amp;A Agent</span>
+      </nav>
+    </div>
+    <div class="masthead__rule"></div>
+  </header>
+
+  <main class="stage" id="stage">
+
+    <!-- ============================== LANDING ============================== -->
+    <section class="view view--landing" data-view="landing">
+      <div class="landing__hero">
+        <p class="kicker">Autonomous Investigation · Powered by Claude</p>
+        <h1 class="hero__headline">
+          The variance memo
+          <em>writes itself.</em>
+        </h1>
+        <p class="hero__lede">
+          Upload your Budget vs. Actuals. An autonomous agent investigates the
+          numbers — drilling into departments, accounts, and transactions —
+          and produces the CFO memo your FP&amp;A team spends half a day on.
+        </p>
+
+        <div class="upload-card">
+          <div class="upload-card__row">
+            <button id="btn-sample" class="btn btn--primary">
+              <span>Try the sample dataset</span>
+              <span class="btn__chevron">→</span>
+            </button>
+            <span class="or">or</span>
+            <label class="btn btn--secondary" for="file-bva">
+              <span>Upload your CSV</span>
+            </label>
+            <input id="file-bva" type="file" accept=".csv" hidden>
+            <label class="btn btn--secondary" for="file-txn">
+              <span>+ Transactions (optional)</span>
+            </label>
+            <input id="file-txn" type="file" accept=".csv" hidden>
+          </div>
+          <details class="upload-card__details">
+            <summary>What columns does my CSV need?</summary>
+            <div class="schema-grid">
+              <div>
+                <h4>Budget vs Actuals (required)</h4>
+                <code>period</code>
+                <code>department</code>
+                <code>account</code>
+                <code>budget</code>
+                <code>actual</code>
+              </div>
+              <div>
+                <h4>Transactions (optional)</h4>
+                <code>date</code>
+                <code>period</code>
+                <code>department</code>
+                <code>account</code>
+                <code>vendor</code>
+                <code>amount</code>
+                <code>memo</code>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div class="hero__featureline">
+          <div><span class="feature-dot"></span>Anthropic native tool use</div>
+          <div><span class="feature-dot"></span>Pandas analytical engine</div>
+          <div><span class="feature-dot"></span>Live agent reasoning stream</div>
+        </div>
+      </div>
+
+      <aside class="landing__sample">
+        <p class="sample-eyebrow">Featured Dataset</p>
+        <h3 class="sample-title">Lumera Health, Inc.</h3>
+        <p class="sample-meta">Series C SaaS · Q3 2025 · 3 months · 6 departments</p>
+        <ul class="sample-list">
+          <li>Subscription revenue beat plan by ~6%</li>
+          <li>Engineering salaries underspent — open reqs</li>
+          <li>Marketing paid-search overspend trending up</li>
+          <li>One-time legal settlement in August</li>
+          <li>Cloud infrastructure scaling with usage</li>
+        </ul>
+        <p class="sample-fineprint">Synthetic data. Any resemblance to a real company is coincidental.</p>
+      </aside>
+    </section>
+
+    <!-- ============================== INVESTIGATION ============================== -->
+    <section class="view view--investigation hidden" data-view="investigation">
+
+      <div class="ribbon">
+        <div class="ribbon__cell">
+          <span class="ribbon__label">Rows</span>
+          <span class="ribbon__value" id="stat-rows">—</span>
+        </div>
+        <div class="ribbon__cell">
+          <span class="ribbon__label">Periods</span>
+          <span class="ribbon__value" id="stat-periods">—</span>
+        </div>
+        <div class="ribbon__cell">
+          <span class="ribbon__label">Departments</span>
+          <span class="ribbon__value" id="stat-depts">—</span>
+        </div>
+        <div class="ribbon__cell">
+          <span class="ribbon__label">Total Budget</span>
+          <span class="ribbon__value mono" id="stat-budget">—</span>
+        </div>
+        <div class="ribbon__cell">
+          <span class="ribbon__label">Total Actual</span>
+          <span class="ribbon__value mono" id="stat-actual">—</span>
+        </div>
+        <div class="ribbon__cell ribbon__cell--accent">
+          <span class="ribbon__label">Variance</span>
+          <span class="ribbon__value mono" id="stat-variance">—</span>
+        </div>
+        <div class="ribbon__cell ribbon__cell--cta">
+          <button id="btn-start" class="btn btn--primary btn--small">Start Investigation</button>
+        </div>
+      </div>
+
+      <div class="investigation-grid">
+        <div class="panel panel--stream">
+          <div class="panel__header">
+            <h2 class="panel__title">Agent Reasoning</h2>
+            <span class="panel__status" id="stream-status">Idle</span>
+          </div>
+          <div class="panel__body" id="stream-body">
+            <div class="empty-state">
+              <p>Press <strong>Start Investigation</strong> to watch the agent work.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel panel--results">
+          <div class="panel__header">
+            <h2 class="panel__title">Executive Memo</h2>
+            <span class="panel__status" id="results-status">—</span>
+          </div>
+          <div class="panel__body" id="results-body">
+            <div class="empty-state">
+              <p>The memo will appear once the agent completes its investigation.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bar">
+        <button id="btn-reset" class="btn btn--ghost btn--small">← Start Over</button>
+        <span class="footer-bar__model" id="model-badge"></span>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="toast" class="toast hidden" role="alert"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

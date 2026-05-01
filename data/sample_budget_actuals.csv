@@ -1,0 +1,76 @@
+period,department,account,budget,actual
+2025-07,Revenue,Subscription Revenue,1800000,1838559.88
+2025-08,Revenue,Subscription Revenue,1800000,1881022.7
+2025-09,Revenue,Subscription Revenue,1800000,1993505.09
+2025-07,Revenue,Professional Services,220000,212809.33
+2025-08,Revenue,Professional Services,220000,222725.44
+2025-09,Revenue,Professional Services,220000,227000.4
+2025-07,Engineering,AWS Hosting,145000,157214.15
+2025-08,Engineering,AWS Hosting,145000,164617.21
+2025-09,Engineering,AWS Hosting,145000,176761.88
+2025-07,Engineering,Snowflake Compute,38000,39712.39
+2025-08,Engineering,Snowflake Compute,38000,42440.25
+2025-09,Engineering,Snowflake Compute,38000,45222.42
+2025-07,Customer Success,Support Tooling,18000,17556.48
+2025-08,Customer Success,Support Tooling,18000,18304.71
+2025-09,Customer Success,Support Tooling,18000,18207.25
+2025-07,Sales,Sales Salaries,420000,420188.75
+2025-08,Sales,Sales Salaries,420000,418825.85
+2025-09,Sales,Sales Salaries,420000,424578.67
+2025-07,Sales,Sales Commissions,180000,187779.25
+2025-08,Sales,Sales Commissions,180000,195231.75
+2025-09,Sales,Sales Commissions,180000,213049.56
+2025-07,Sales,Sales Travel & Entertainment,45000,50499.86
+2025-08,Sales,Sales Travel & Entertainment,45000,42232.43
+2025-09,Sales,Sales Travel & Entertainment,45000,46190.31
+2025-07,Marketing,Marketing Salaries,175000,175800.12
+2025-08,Marketing,Marketing Salaries,175000,174714.04
+2025-09,Marketing,Marketing Salaries,175000,174287.31
+2025-07,Marketing,Paid Search - Brand,35000,35556.03
+2025-08,Marketing,Paid Search - Brand,35000,36526.49
+2025-09,Marketing,Paid Search - Brand,35000,34335.58
+2025-07,Marketing,Paid Search - Non-Brand,85000,112544.6
+2025-08,Marketing,Paid Search - Non-Brand,85000,134608.53
+2025-09,Marketing,Paid Search - Non-Brand,85000,145402.66
+2025-07,Marketing,Content & SEO,42000,39666.79
+2025-08,Marketing,Content & SEO,42000,40271.03
+2025-09,Marketing,Content & SEO,42000,41181.42
+2025-07,Marketing,Conferences & Events,65000,55432.0
+2025-08,Marketing,Conferences & Events,65000,94361.7
+2025-09,Marketing,Conferences & Events,65000,60016.3
+2025-07,Marketing,Martech Subscriptions,22000,23117.87
+2025-08,Marketing,Martech Subscriptions,22000,22926.81
+2025-09,Marketing,Martech Subscriptions,22000,23214.09
+2025-07,Engineering,Engineering Salaries,780000,731204.95
+2025-08,Engineering,Engineering Salaries,780000,708305.08
+2025-09,Engineering,Engineering Salaries,780000,683515.69
+2025-07,Engineering,Engineering Contractors,85000,100031.99
+2025-08,Engineering,Engineering Contractors,85000,113445.54
+2025-09,Engineering,Engineering Contractors,85000,119583.9
+2025-07,Engineering,Developer Tools & Licenses,45000,45962.28
+2025-08,Engineering,Developer Tools & Licenses,45000,47635.52
+2025-09,Engineering,Developer Tools & Licenses,45000,47188.66
+2025-07,Engineering,QA & SRE Salaries,165000,162875.48
+2025-08,Engineering,QA & SRE Salaries,165000,164615.51
+2025-09,Engineering,QA & SRE Salaries,165000,167377.68
+2025-07,G&A,G&A Salaries,195000,195288.67
+2025-08,G&A,G&A Salaries,195000,197164.93
+2025-09,G&A,G&A Salaries,195000,194358.72
+2025-07,G&A,Legal Fees,28000,26660.95
+2025-08,G&A,Legal Fees,28000,89298.41
+2025-09,G&A,Legal Fees,28000,30762.87
+2025-07,G&A,Audit & Accounting,22000,22107.7
+2025-08,G&A,Audit & Accounting,22000,22030.8
+2025-09,G&A,Audit & Accounting,22000,23113.16
+2025-07,G&A,Rent & Utilities,55000,55101.54
+2025-08,G&A,Rent & Utilities,55000,55188.57
+2025-09,G&A,Rent & Utilities,55000,55151.8
+2025-07,G&A,Insurance Premiums,18000,17951.23
+2025-08,G&A,Insurance Premiums,18000,17915.78
+2025-09,G&A,Insurance Premiums,18000,18685.45
+2025-07,Customer Success,CS Salaries,215000,214500.64
+2025-08,Customer Success,CS Salaries,215000,216522.4
+2025-09,Customer Success,CS Salaries,215000,220271.3
+2025-07,Customer Success,CS Tooling,15000,15508.15
+2025-08,Customer Success,CS Tooling,15000,15720.81
+2025-09,Customer Success,CS Tooling,15000,16225.18
