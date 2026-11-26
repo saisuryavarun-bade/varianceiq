@@ -1,0 +1,3 @@
+date,period,department,account,vendor,amount,memo
+2026-09-15,2026-09,Operations,Contractors,Synthetic Vendor 0,0.1,Fictional consulting invoice
+2026-09-15,2026-09,Operations,Contractors,Synthetic Vendor 1,0.2,Fictional consulting invoice
