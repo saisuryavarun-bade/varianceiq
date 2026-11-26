@@ -1,12 +1,12 @@
 {
   "date": "2026-11-26",
-  "commit_under_test": "e540d3b0e144cbeedcc3b5693a2b42b3fde67340",
+  "commit_under_test": "b6973653db8c77bf016937886a7fa1b634607883",
   "scope": "CSV upload, real tools, API and real agent SSE orchestration with scripted provider",
   "live_model_tested": false,
   "browser_ui_tested": false,
   "external_calls": 0,
-  "passed": 19,
-  "failed": 6,
+  "passed": 25,
+  "failed": 0,
   "checks": [
     {
       "name": "valid_upload",
@@ -451,14 +451,14 @@
     },
     {
       "name": "zero_variance_direction",
-      "passed": false,
+      "passed": true,
       "expected": "On budget for exactly zero variance",
-      "observed": "Under budget",
-      "severity": "medium"
+      "observed": "On budget",
+      "severity": "none"
     },
     {
       "name": "absent_period_is_not_zero",
-      "passed": false,
+      "passed": true,
       "expected": "Explicit missing-period indication, not a fabricated zero actual",
       "observed": {
         "period_a": "2026-08",
@@ -467,62 +467,25 @@
           "department": null,
           "account": null
         },
-        "actual_a": "$0",
+        "missing_periods": [
+          "2026-08"
+        ],
+        "actual_a": null,
         "actual_b": "$100",
-        "delta": "$100",
-        "delta_pct": "n/a"
+        "delta": null,
+        "delta_pct": null,
+        "note": "Cannot compare: no matching records for one or more periods. Missing data is not zero."
       },
-      "severity": "high"
+      "severity": "none"
     },
     {
       "name": "nonnumeric_actual_rejected",
-      "passed": false,
+      "passed": true,
       "expected": "HTTP 400 for malformed financial input",
       "observed": {
-        "http": 200,
+        "http": 400,
         "body": {
-          "status": "loaded",
-          "rows": 1
-        },
-        "downstream": {
-          "error": "Bad arguments to query_variances: unsupported operand type(s) for -: 'str' and 'int'"
-        }
-      },
-      "severity": "high"
-    },
-    {
-      "name": "missing_actual_rejected",
-      "passed": false,
-      "expected": "HTTP 400 for malformed financial input",
-      "observed": {
-        "http": 200,
-        "body": {
-          "status": "loaded",
-          "rows": 1
-        },
-        "downstream": {
-          "variance_count": 0,
-          "filters": {
-            "period": null,
-            "department": null,
-            "account": null,
-            "min_abs_variance": 0,
-            "min_abs_variance_pct": 0.15
-          },
-          "variances": []
-        }
-      },
-      "severity": "high"
-    },
-    {
-      "name": "infinite_transaction_rejected",
-      "passed": false,
-      "expected": "HTTP 400 for malformed financial input",
-      "observed": {
-        "http": 200,
-        "body": {
-          "status": "loaded",
-          "rows": 1
+          "detail": "budget_actuals.actual must contain finite numeric amounts; missing values are not allowed."
         },
         "downstream": {
           "variance_count": 1,
@@ -538,26 +501,25 @@
               "period": "2026-09",
               "department": "Operations",
               "account": "Contractors",
-              "budget": "$30K",
+              "budget": "$100",
               "actual": "$100",
-              "variance": "-$30K",
-              "variance_pct": "-99.7%",
-              "direction": "Under budget"
+              "variance": "$0",
+              "variance_pct": "+0.0%",
+              "direction": "On budget"
             }
           ]
         }
       },
-      "severity": "high"
+      "severity": "none"
     },
     {
-      "name": "invalid_period_rejected",
-      "passed": false,
+      "name": "missing_actual_rejected",
+      "passed": true,
       "expected": "HTTP 400 for malformed financial input",
       "observed": {
-        "http": 200,
+        "http": 400,
         "body": {
-          "status": "loaded",
-          "rows": 1
+          "detail": "budget_actuals.actual must contain finite numeric amounts; missing values are not allowed."
         },
         "downstream": {
           "variance_count": 1,
@@ -570,19 +532,87 @@
           },
           "variances": [
             {
-              "period": "2026-13",
+              "period": "2026-09",
               "department": "Operations",
               "account": "Contractors",
-              "budget": "$30K",
+              "budget": "$100",
               "actual": "$100",
-              "variance": "-$30K",
-              "variance_pct": "-99.7%",
-              "direction": "Under budget"
+              "variance": "$0",
+              "variance_pct": "+0.0%",
+              "direction": "On budget"
             }
           ]
         }
       },
-      "severity": "high"
+      "severity": "none"
+    },
+    {
+      "name": "infinite_transaction_rejected",
+      "passed": true,
+      "expected": "HTTP 400 for malformed financial input",
+      "observed": {
+        "http": 400,
+        "body": {
+          "detail": "transactions.amount must contain finite numeric amounts; missing values are not allowed."
+        },
+        "downstream": {
+          "variance_count": 1,
+          "filters": {
+            "period": null,
+            "department": null,
+            "account": null,
+            "min_abs_variance": 0,
+            "min_abs_variance_pct": 0.15
+          },
+          "variances": [
+            {
+              "period": "2026-09",
+              "department": "Operations",
+              "account": "Contractors",
+              "budget": "$100",
+              "actual": "$100",
+              "variance": "$0",
+              "variance_pct": "+0.0%",
+              "direction": "On budget"
+            }
+          ]
+        }
+      },
+      "severity": "none"
+    },
+    {
+      "name": "invalid_period_rejected",
+      "passed": true,
+      "expected": "HTTP 400 for malformed financial input",
+      "observed": {
+        "http": 400,
+        "body": {
+          "detail": "budget_actuals.period must use a valid YYYY-MM month."
+        },
+        "downstream": {
+          "variance_count": 1,
+          "filters": {
+            "period": null,
+            "department": null,
+            "account": null,
+            "min_abs_variance": 0,
+            "min_abs_variance_pct": 0.15
+          },
+          "variances": [
+            {
+              "period": "2026-09",
+              "department": "Operations",
+              "account": "Contractors",
+              "budget": "$100",
+              "actual": "$100",
+              "variance": "$0",
+              "variance_pct": "+0.0%",
+              "direction": "On budget"
+            }
+          ]
+        }
+      },
+      "severity": "none"
     },
     {
       "name": "missing_column_rejected",

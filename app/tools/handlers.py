@@ -106,7 +106,8 @@ def query_variances(
                     if pd.notna(r["variance_pct"])
                     else "n/a"
                 ),
-                "direction": "Over budget" if r["variance"] > 0 else "Under budget",
+                "direction": ("Over budget" if r["variance"] > 0 else
+                              "Under budget" if r["variance"] < 0 else "On budget"),
             }
         )
 
@@ -200,6 +201,18 @@ def compare_period_over_period(
 
     a = df[df["period"] == period_a]
     b = df[df["period"] == period_b]
+
+    missing = [period for period, rows in ((period_a, a), (period_b, b)) if rows.empty]
+    if missing:
+        return {
+            "period_a": period_a, "period_b": period_b,
+            "filters": {"department": department, "account": account},
+            "missing_periods": list(dict.fromkeys(missing)),
+            "actual_a": _format_currency(float(a["actual"].sum())) if not a.empty else None,
+            "actual_b": _format_currency(float(b["actual"].sum())) if not b.empty else None,
+            "delta": None, "delta_pct": None,
+            "note": "Cannot compare: no matching records for one or more periods. Missing data is not zero.",
+        }
 
     actual_a = float(a["actual"].sum())
     actual_b = float(b["actual"].sum())

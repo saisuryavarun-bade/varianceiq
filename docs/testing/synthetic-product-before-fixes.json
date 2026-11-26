@@ -1,0 +1,664 @@
+{
+  "date": "2026-11-26",
+  "commit_under_test": "e540d3b0e144cbeedcc3b5693a2b42b3fde67340",
+  "scope": "CSV upload, real tools, API and real agent SSE orchestration with scripted provider",
+  "live_model_tested": false,
+  "browser_ui_tested": false,
+  "external_calls": 0,
+  "passed": 19,
+  "failed": 6,
+  "checks": [
+    {
+      "name": "valid_upload",
+      "passed": true,
+      "expected": "HTTP 200",
+      "observed": 200,
+      "severity": "none"
+    },
+    {
+      "name": "dataset_counts",
+      "passed": true,
+      "expected": "40 uploaded transactions",
+      "observed": {
+        "source": "budget.csv",
+        "row_count": 1,
+        "transaction_count": 40,
+        "periods": [
+          "2026-09"
+        ],
+        "departments": [
+          "Operations"
+        ],
+        "accounts": [
+          "Contractors"
+        ]
+      },
+      "severity": "none"
+    },
+    {
+      "name": "truncated_totals",
+      "passed": true,
+      "expected": "Full total 40780; displayed subtotal 5185; 5 of 40 rows",
+      "observed": {
+        "period": "2026-09",
+        "department": "Operations",
+        "account": "Contractors",
+        "dataset_snapshot_sha256": "20215231cff23b340b4c7318a963a6f88d3ec574d2ccd00a4c338d80994f9744",
+        "matching_transaction_count": 40,
+        "transaction_count": 5,
+        "is_truncated": true,
+        "total_amount_exact": "40780",
+        "returned_amount_exact": "5185",
+        "transactions": [
+          {
+            "source_id": "txn:20215231cff23b340b4c7318a963a6f88d3ec574d2ccd00a4c338d80994f9744:40",
+            "source_row": 40,
+            "date": "2026-09-15",
+            "period": "2026-09",
+            "department": "Operations",
+            "account": "Contractors",
+            "vendor": "Synthetic Vendor 3",
+            "memo": "Fictional consulting invoice",
+            "amount_exact": "1039",
+            "amount": "$1K"
+          },
+          {
+            "source_id": "txn:20215231cff23b340b4c7318a963a6f88d3ec574d2ccd00a4c338d80994f9744:39",
+            "source_row": 39,
+            "date": "2026-09-15",
+            "period": "2026-09",
+            "department": "Operations",
+            "account": "Contractors",
+            "vendor": "Synthetic Vendor 2",
+            "memo": "Fictional consulting invoice",
+            "amount_exact": "1038",
+            "amount": "$1K"
+          },
+          {
+            "source_id": "txn:20215231cff23b340b4c7318a963a6f88d3ec574d2ccd00a4c338d80994f9744:38",
+            "source_row": 38,
+            "date": "2026-09-15",
+            "period": "2026-09",
+            "department": "Operations",
+            "account": "Contractors",
+            "vendor": "Synthetic Vendor 1",
+            "memo": "Fictional consulting invoice",
+            "amount_exact": "1037",
+            "amount": "$1K"
+          },
+          {
+            "source_id": "txn:20215231cff23b340b4c7318a963a6f88d3ec574d2ccd00a4c338d80994f9744:37",
+            "source_row": 37,
+            "date": "2026-09-15",
+            "period": "2026-09",
+            "department": "Operations",
+            "account": "Contractors",
+            "vendor": "Synthetic Vendor 0",
+            "memo": "Fictional consulting invoice",
+            "amount_exact": "1036",
+            "amount": "$1K"
+          },
+          {
+            "source_id": "txn:20215231cff23b340b4c7318a963a6f88d3ec574d2ccd00a4c338d80994f9744:36",
+            "source_row": 36,
+            "date": "2026-09-15",
+            "period": "2026-09",
+            "department": "Operations",
+            "account": "Contractors",
+            "vendor": "Synthetic Vendor 3",
+            "memo": "Fictional consulting invoice",
+            "amount_exact": "1035",
+            "amount": "$1K"
+          }
+        ],
+        "reconciliation": {
+          "status": "matched",
+          "budget_actual_rows": 1,
+          "booked_actual_exact": "40780",
+          "ledger_minus_actual_exact": "0",
+          "scope": "All matching loaded transactions versus matching booked actuals; exact decimal equality, no tolerance."
+        },
+        "evidence_limits": [
+          "Source rows are 1-based data rows in the identified ordered transaction snapshot, excluding a file header.",
+          "The snapshot fingerprint identifies loaded data; it does not authenticate the original ledger.",
+          "A matched sum does not prove source completeness, factual correctness, or the cause of a variance.",
+          "Amounts are decimal representations of loaded values; parsing may already have lost source precision."
+        ],
+        "total_amount": "$41K",
+        "returned_amount": "$5K"
+      },
+      "severity": "none"
+    },
+    {
+      "name": "matching_actuals",
+      "passed": true,
+      "expected": "matched",
+      "observed": {
+        "status": "matched",
+        "budget_actual_rows": 1,
+        "booked_actual_exact": "40780",
+        "ledger_minus_actual_exact": "0",
+        "scope": "All matching loaded transactions versus matching booked actuals; exact decimal equality, no tolerance."
+      },
+      "severity": "none"
+    },
+    {
+      "name": "citations_resolve_to_loaded_rows",
+      "passed": true,
+      "expected": "Each source reference resolves to its actual uploaded row",
+      "observed": 5,
+      "severity": "none"
+    },
+    {
+      "name": "variance_arithmetic",
+      "passed": true,
+      "expected": "(40780-30000)/30000 = 35.933...%",
+      "observed": {
+        "variance_count": 1,
+        "filters": {
+          "period": null,
+          "department": null,
+          "account": null,
+          "min_abs_variance": 0,
+          "min_abs_variance_pct": 0.15
+        },
+        "variances": [
+          {
+            "period": "2026-09",
+            "department": "Operations",
+            "account": "Contractors",
+            "budget": "$30K",
+            "actual": "$41K",
+            "variance": "$11K",
+            "variance_pct": "+35.9%",
+            "direction": "Over budget"
+          }
+        ]
+      },
+      "severity": "none"
+    },
+    {
+      "name": "vendor_aggregation",
+      "passed": true,
+      "expected": "All 40 transactions counted across vendors",
+      "observed": {
+        "period": "2026-09",
+        "vendor_count": 4,
+        "vendors": [
+          {
+            "vendor": "Synthetic Vendor 3",
+            "total_spend": "$10K",
+            "transaction_count": 10
+          },
+          {
+            "vendor": "Synthetic Vendor 2",
+            "total_spend": "$10K",
+            "transaction_count": 10
+          },
+          {
+            "vendor": "Synthetic Vendor 1",
+            "total_spend": "$10K",
+            "transaction_count": 10
+          },
+          {
+            "vendor": "Synthetic Vendor 0",
+            "total_spend": "$10K",
+            "transaction_count": 10
+          }
+        ]
+      },
+      "severity": "none"
+    },
+    {
+      "name": "scripted_investigation_sse",
+      "passed": true,
+      "expected": "Real agent loop executes 4 tools and emits final/done; provider is scripted",
+      "observed": {
+        "http": 200,
+        "event_types": [
+          "status",
+          "tool_call",
+          "tool_result",
+          "tool_call",
+          "tool_result",
+          "tool_call",
+          "tool_result",
+          "tool_call",
+          "tool_result",
+          "final",
+          "done"
+        ],
+        "tool_count": 4,
+        "provider_turns": 2
+      },
+      "severity": "none"
+    },
+    {
+      "name": "credit_reversal",
+      "passed": true,
+      "expected": "Credit included; 100-20=80; matched",
+      "observed": {
+        "period": "2026-09",
+        "department": "Operations",
+        "account": "Contractors",
+        "dataset_snapshot_sha256": "dff152ac8361fddfd42cca1b223407be118f0677a342e3bdd5ef0486740ac159",
+        "matching_transaction_count": 2,
+        "transaction_count": 2,
+        "is_truncated": false,
+        "total_amount_exact": "80",
+        "returned_amount_exact": "80",
+        "transactions": [
+          {
+            "source_id": "txn:dff152ac8361fddfd42cca1b223407be118f0677a342e3bdd5ef0486740ac159:1",
+            "source_row": 1,
+            "date": "2026-09-15",
+            "period": "2026-09",
+            "department": "Operations",
+            "account": "Contractors",
+            "vendor": "Synthetic Vendor 0",
+            "memo": "Fictional consulting invoice",
+            "amount_exact": "100",
+            "amount": "$100"
+          },
+          {
+            "source_id": "txn:dff152ac8361fddfd42cca1b223407be118f0677a342e3bdd5ef0486740ac159:2",
+            "source_row": 2,
+            "date": "2026-09-15",
+            "period": "2026-09",
+            "department": "Operations",
+            "account": "Contractors",
+            "vendor": "Synthetic Vendor 1",
+            "memo": "Fictional consulting invoice",
+            "amount_exact": "-20",
+            "amount": "-$20"
+          }
+        ],
+        "reconciliation": {
+          "status": "matched",
+          "budget_actual_rows": 1,
+          "booked_actual_exact": "80",
+          "ledger_minus_actual_exact": "0",
+          "scope": "All matching loaded transactions versus matching booked actuals; exact decimal equality, no tolerance."
+        },
+        "evidence_limits": [
+          "Source rows are 1-based data rows in the identified ordered transaction snapshot, excluding a file header.",
+          "The snapshot fingerprint identifies loaded data; it does not authenticate the original ledger.",
+          "A matched sum does not prove source completeness, factual correctness, or the cause of a variance.",
+          "Amounts are decimal representations of loaded values; parsing may already have lost source precision."
+        ],
+        "total_amount": "$80",
+        "returned_amount": "$80"
+      },
+      "severity": "none"
+    },
+    {
+      "name": "decimal_precision",
+      "passed": true,
+      "expected": "0.1+0.2 reconciles exactly with 0.3",
+      "observed": {
+        "period": "2026-09",
+        "department": "Operations",
+        "account": "Contractors",
+        "dataset_snapshot_sha256": "e543768128aa04673fefbe70599842f21db78d948ad74073b8410acfec9b2189",
+        "matching_transaction_count": 2,
+        "transaction_count": 2,
+        "is_truncated": false,
+        "total_amount_exact": "0.3",
+        "returned_amount_exact": "0.3",
+        "transactions": [
+          {
+            "source_id": "txn:e543768128aa04673fefbe70599842f21db78d948ad74073b8410acfec9b2189:2",
+            "source_row": 2,
+            "date": "2026-09-15",
+            "period": "2026-09",
+            "department": "Operations",
+            "account": "Contractors",
+            "vendor": "Synthetic Vendor 1",
+            "memo": "Fictional consulting invoice",
+            "amount_exact": "0.2",
+            "amount": "$0"
+          },
+          {
+            "source_id": "txn:e543768128aa04673fefbe70599842f21db78d948ad74073b8410acfec9b2189:1",
+            "source_row": 1,
+            "date": "2026-09-15",
+            "period": "2026-09",
+            "department": "Operations",
+            "account": "Contractors",
+            "vendor": "Synthetic Vendor 0",
+            "memo": "Fictional consulting invoice",
+            "amount_exact": "0.1",
+            "amount": "$0"
+          }
+        ],
+        "reconciliation": {
+          "status": "matched",
+          "budget_actual_rows": 1,
+          "booked_actual_exact": "0.3",
+          "ledger_minus_actual_exact": "0.0",
+          "scope": "All matching loaded transactions versus matching booked actuals; exact decimal equality, no tolerance."
+        },
+        "evidence_limits": [
+          "Source rows are 1-based data rows in the identified ordered transaction snapshot, excluding a file header.",
+          "The snapshot fingerprint identifies loaded data; it does not authenticate the original ledger.",
+          "A matched sum does not prove source completeness, factual correctness, or the cause of a variance.",
+          "Amounts are decimal representations of loaded values; parsing may already have lost source precision."
+        ],
+        "total_amount": "$0",
+        "returned_amount": "$0"
+      },
+      "severity": "none"
+    },
+    {
+      "name": "missing_record_detection",
+      "passed": true,
+      "expected": "Ledger 150 versus booked 200 => mismatch",
+      "observed": {
+        "status": "mismatch",
+        "budget_actual_rows": 1,
+        "booked_actual_exact": "200",
+        "ledger_minus_actual_exact": "-50",
+        "scope": "All matching loaded transactions versus matching booked actuals; exact decimal equality, no tolerance."
+      },
+      "severity": "none"
+    },
+    {
+      "name": "duplicate_changes_total",
+      "passed": true,
+      "expected": "Duplicate changes ledger to 250 versus booked 150; mismatch, not deduplicated",
+      "observed": {
+        "status": "mismatch",
+        "budget_actual_rows": 1,
+        "booked_actual_exact": "150",
+        "ledger_minus_actual_exact": "100",
+        "scope": "All matching loaded transactions versus matching booked actuals; exact decimal equality, no tolerance."
+      },
+      "severity": "none"
+    },
+    {
+      "name": "wrong_period_exclusion",
+      "passed": true,
+      "expected": "No in-period transactions => insufficient_evidence",
+      "observed": {
+        "status": "insufficient_evidence",
+        "budget_actual_rows": 1,
+        "booked_actual_exact": "150",
+        "ledger_minus_actual_exact": "-150",
+        "scope": "All matching loaded transactions versus matching booked actuals; exact decimal equality, no tolerance."
+      },
+      "severity": "none"
+    },
+    {
+      "name": "empty_ledger_not_verified_zero",
+      "passed": true,
+      "expected": "Empty ledger is not a verified zero",
+      "observed": {
+        "period": "2026-09",
+        "department": "Operations",
+        "account": "Contractors",
+        "dataset_snapshot_sha256": "5b99cbad7e197763a9d20c0a1d32ff20de6688782ca1a02f245aa252aca7ec17",
+        "matching_transaction_count": 0,
+        "transaction_count": 0,
+        "is_truncated": false,
+        "total_amount_exact": "0",
+        "returned_amount_exact": "0",
+        "transactions": [],
+        "reconciliation": {
+          "status": "insufficient_evidence",
+          "budget_actual_rows": 1,
+          "booked_actual_exact": "0",
+          "ledger_minus_actual_exact": "0",
+          "scope": "All matching loaded transactions versus matching booked actuals; exact decimal equality, no tolerance."
+        },
+        "evidence_limits": [
+          "Source rows are 1-based data rows in the identified ordered transaction snapshot, excluding a file header.",
+          "The snapshot fingerprint identifies loaded data; it does not authenticate the original ledger.",
+          "A matched sum does not prove source completeness, factual correctness, or the cause of a variance.",
+          "Amounts are decimal representations of loaded values; parsing may already have lost source precision."
+        ],
+        "total_amount": "$0",
+        "returned_amount": "$0"
+      },
+      "severity": "none"
+    },
+    {
+      "name": "zero_budget_percentage",
+      "passed": true,
+      "expected": "No division-by-zero; percentage n/a",
+      "observed": {
+        "variance_count": 1,
+        "filters": {
+          "period": null,
+          "department": null,
+          "account": null,
+          "min_abs_variance": 0,
+          "min_abs_variance_pct": 0.15
+        },
+        "variances": [
+          {
+            "period": "2026-09",
+            "department": "Operations",
+            "account": "Contractors",
+            "budget": "$0",
+            "actual": "$500",
+            "variance": "$500",
+            "variance_pct": "n/a",
+            "direction": "Over budget"
+          }
+        ]
+      },
+      "severity": "none"
+    },
+    {
+      "name": "zero_variance_direction",
+      "passed": false,
+      "expected": "On budget for exactly zero variance",
+      "observed": "Under budget",
+      "severity": "medium"
+    },
+    {
+      "name": "absent_period_is_not_zero",
+      "passed": false,
+      "expected": "Explicit missing-period indication, not a fabricated zero actual",
+      "observed": {
+        "period_a": "2026-08",
+        "period_b": "2026-09",
+        "filters": {
+          "department": null,
+          "account": null
+        },
+        "actual_a": "$0",
+        "actual_b": "$100",
+        "delta": "$100",
+        "delta_pct": "n/a"
+      },
+      "severity": "high"
+    },
+    {
+      "name": "nonnumeric_actual_rejected",
+      "passed": false,
+      "expected": "HTTP 400 for malformed financial input",
+      "observed": {
+        "http": 200,
+        "body": {
+          "status": "loaded",
+          "rows": 1
+        },
+        "downstream": {
+          "error": "Bad arguments to query_variances: unsupported operand type(s) for -: 'str' and 'int'"
+        }
+      },
+      "severity": "high"
+    },
+    {
+      "name": "missing_actual_rejected",
+      "passed": false,
+      "expected": "HTTP 400 for malformed financial input",
+      "observed": {
+        "http": 200,
+        "body": {
+          "status": "loaded",
+          "rows": 1
+        },
+        "downstream": {
+          "variance_count": 0,
+          "filters": {
+            "period": null,
+            "department": null,
+            "account": null,
+            "min_abs_variance": 0,
+            "min_abs_variance_pct": 0.15
+          },
+          "variances": []
+        }
+      },
+      "severity": "high"
+    },
+    {
+      "name": "infinite_transaction_rejected",
+      "passed": false,
+      "expected": "HTTP 400 for malformed financial input",
+      "observed": {
+        "http": 200,
+        "body": {
+          "status": "loaded",
+          "rows": 1
+        },
+        "downstream": {
+          "variance_count": 1,
+          "filters": {
+            "period": null,
+            "department": null,
+            "account": null,
+            "min_abs_variance": 0,
+            "min_abs_variance_pct": 0.15
+          },
+          "variances": [
+            {
+              "period": "2026-09",
+              "department": "Operations",
+              "account": "Contractors",
+              "budget": "$30K",
+              "actual": "$100",
+              "variance": "-$30K",
+              "variance_pct": "-99.7%",
+              "direction": "Under budget"
+            }
+          ]
+        }
+      },
+      "severity": "high"
+    },
+    {
+      "name": "invalid_period_rejected",
+      "passed": false,
+      "expected": "HTTP 400 for malformed financial input",
+      "observed": {
+        "http": 200,
+        "body": {
+          "status": "loaded",
+          "rows": 1
+        },
+        "downstream": {
+          "variance_count": 1,
+          "filters": {
+            "period": null,
+            "department": null,
+            "account": null,
+            "min_abs_variance": 0,
+            "min_abs_variance_pct": 0.15
+          },
+          "variances": [
+            {
+              "period": "2026-13",
+              "department": "Operations",
+              "account": "Contractors",
+              "budget": "$30K",
+              "actual": "$100",
+              "variance": "-$30K",
+              "variance_pct": "-99.7%",
+              "direction": "Under budget"
+            }
+          ]
+        }
+      },
+      "severity": "high"
+    },
+    {
+      "name": "missing_column_rejected",
+      "passed": true,
+      "expected": "HTTP 400",
+      "observed": {
+        "detail": "budget_actuals is missing required columns: ['actual']"
+      },
+      "severity": "none"
+    },
+    {
+      "name": "failed_upload_is_atomic",
+      "passed": true,
+      "expected": "Failed upload preserves prior store",
+      "observed": true,
+      "severity": "none"
+    },
+    {
+      "name": "reset_sample",
+      "passed": true,
+      "expected": "Bundled sample restored after audit",
+      "observed": {
+        "source": "sample",
+        "row_count": 75,
+        "transaction_count": 78,
+        "periods": [
+          "2025-07",
+          "2025-08",
+          "2025-09"
+        ],
+        "departments": [
+          "Customer Success",
+          "Engineering",
+          "G&A",
+          "Marketing",
+          "Revenue",
+          "Sales"
+        ],
+        "accounts": [
+          "AWS Hosting",
+          "Audit & Accounting",
+          "CS Salaries",
+          "CS Tooling",
+          "Conferences & Events",
+          "Content & SEO",
+          "Developer Tools & Licenses",
+          "Engineering Contractors",
+          "Engineering Salaries",
+          "G&A Salaries",
+          "Insurance Premiums",
+          "Legal Fees",
+          "Marketing Salaries",
+          "Martech Subscriptions",
+          "Paid Search - Brand",
+          "Paid Search - Non-Brand",
+          "Professional Services",
+          "QA & SRE Salaries",
+          "Rent & Utilities",
+          "Sales Commissions",
+          "Sales Salaries",
+          "Sales Travel & Entertainment",
+          "Snowflake Compute",
+          "Subscription Revenue",
+          "Support Tooling"
+        ]
+      },
+      "severity": "none"
+    },
+    {
+      "name": "missing_model_key_handled",
+      "passed": true,
+      "expected": "HTTP 400 with configuration error",
+      "observed": {
+        "error": "ANTHROPIC_API_KEY is not configured on the server. Set it in .env or as an environment variable."
+      },
+      "severity": "none"
+    }
+  ]
+}

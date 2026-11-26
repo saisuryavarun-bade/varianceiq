@@ -193,15 +193,15 @@ def run():
                 live_model_tested=False,browser_ui_tested=False,external_calls=0,
                 passed=sum(f['passed'] for f in FINDINGS),failed=sum(not f['passed'] for f in FINDINGS),checks=FINDINGS)
     (REPORT/'synthetic-product-results.json').write_text(json.dumps(report,indent=2,default=str)+'\n',encoding='utf-8')
-    lines=['# Synthetic product test report','',f"Executed 26 November 2026 against commit `{report['commit_under_test']}`.",'',
+    lines=['# Synthetic product test report','',f"Executed 26 November 2026 against the working tree based on commit `{report['commit_under_test']}` (including local fixes).",'',
            f"**{report['passed']} checks passed; {report['failed']} failed.**",'',
-           'These tests upload generated CSVs through the real FastAPI endpoint, invoke the real analytical tools and exercise the real agent/SSE loop with a scripted provider. No LLM calls, participant study or browser rendering test were performed. The model key is not configured in this checkout.', '',
+           'These tests upload generated CSVs through the real FastAPI endpoint, invoke the real analytical tools and exercise the real agent/SSE loop with a scripted provider. No LLM calls, participant study or browser rendering test were performed.', '',
            '| Check | Result | Severity | Expected |','|---|---|---|---|']
     for f in FINDINGS:lines.append(f"| {f['name']} | {'PASS' if f['passed'] else 'FAIL'} | {f['severity']} | {f['expected']} |")
     lines += ['', '## Reproduce', '', '```bash','python scripts/test_synthetic_product.py','```','',
               'Exit code 1 signals detected product failures. Generated fixtures are under `tests/fixtures/synthetic_product/`; full observations are in `synthetic-product-results.json`. The script runs an isolated in-process application and resets its dataset at the end. It does not connect to a deployed server.', '',
               '## Release interpretation','',
-              'Passing deterministic checks establishes behavior only for these cases. Provider scripting verifies tool execution and event transport, not whether a real model selects the right tools, cites evidence correctly, resists malicious memos, or writes faithful conclusions. Invalid-input rejection and absent-period handling must be addressed before treating uploads as trustworthy.']
+              'Passing deterministic checks establishes behavior only for these cases. Provider scripting verifies tool execution and event transport, not whether a real model selects the right tools, cites evidence correctly, resists malicious memos, or writes faithful conclusions. The original six failures are preserved in synthetic-product-before-fixes.json; consult the current results above for their status.']
     (REPORT/'synthetic-product-report.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
     print(json.dumps({k:report[k] for k in ['passed','failed','live_model_tested','commit_under_test']}))
     for f in FINDINGS:

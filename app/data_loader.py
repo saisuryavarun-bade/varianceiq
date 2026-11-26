@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import math
+import re
 
 import pandas as pd
 
@@ -64,6 +66,26 @@ class DataStore:
             raise ValueError(
                 f"transactions is missing required columns: {sorted(missing_tx)}"
             )
+        if ba.empty:
+            raise ValueError("budget_actuals must contain at least one row.")
+        for name, frame, amounts in (
+            ("budget_actuals", ba, ("budget", "actual")),
+            ("transactions", tx, ("amount",)),
+        ):
+            for column in ("period", "department", "account"):
+                values = frame[column]
+                if values.isna().any() or values.map(lambda v: not isinstance(v, str) or not v.strip()).any():
+                    raise ValueError(f"{name}.{column} must contain nonempty text.")
+            if not frame["period"].map(lambda v: bool(re.fullmatch(r"[0-9]{4}-(0[1-9]|1[0-2])", v))).all():
+                raise ValueError(f"{name}.period must use a valid YYYY-MM month.")
+            for column in amounts:
+                values = frame[column]
+                numeric = pd.to_numeric(values, errors="coerce")
+                if values.map(lambda v: isinstance(v, bool)).any() or not numeric.map(
+                    lambda v: pd.notna(v) and math.isfinite(float(v))
+                ).all():
+                    raise ValueError(f"{name}.{column} must contain finite numeric amounts; missing values are not allowed.")
+                frame[column] = numeric
 
 
 def load_sample_store() -> DataStore:

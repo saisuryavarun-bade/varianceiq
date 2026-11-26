@@ -1,10 +1,10 @@
 # Synthetic product test report
 
-Executed 26 November 2026 against commit `e540d3b0e144cbeedcc3b5693a2b42b3fde67340`.
+Executed 26 November 2026 against the working tree based on commit `b6973653db8c77bf016937886a7fa1b634607883` (including local fixes).
 
-**19 checks passed; 6 failed.**
+**25 checks passed; 0 failed.**
 
-These tests upload generated CSVs through the real FastAPI endpoint, invoke the real analytical tools and exercise the real agent/SSE loop with a scripted provider. No LLM calls, participant study or browser rendering test were performed. The model key is not configured in this checkout.
+These tests upload generated CSVs through the real FastAPI endpoint, invoke the real analytical tools and exercise the real agent/SSE loop with a scripted provider. No LLM calls, participant study or browser rendering test were performed.
 
 | Check | Result | Severity | Expected |
 |---|---|---|---|
@@ -23,12 +23,12 @@ These tests upload generated CSVs through the real FastAPI endpoint, invoke the 
 | wrong_period_exclusion | PASS | none | No in-period transactions => insufficient_evidence |
 | empty_ledger_not_verified_zero | PASS | none | Empty ledger is not a verified zero |
 | zero_budget_percentage | PASS | none | No division-by-zero; percentage n/a |
-| zero_variance_direction | FAIL | medium | On budget for exactly zero variance |
-| absent_period_is_not_zero | FAIL | high | Explicit missing-period indication, not a fabricated zero actual |
-| nonnumeric_actual_rejected | FAIL | high | HTTP 400 for malformed financial input |
-| missing_actual_rejected | FAIL | high | HTTP 400 for malformed financial input |
-| infinite_transaction_rejected | FAIL | high | HTTP 400 for malformed financial input |
-| invalid_period_rejected | FAIL | high | HTTP 400 for malformed financial input |
+| zero_variance_direction | PASS | none | On budget for exactly zero variance |
+| absent_period_is_not_zero | PASS | none | Explicit missing-period indication, not a fabricated zero actual |
+| nonnumeric_actual_rejected | PASS | none | HTTP 400 for malformed financial input |
+| missing_actual_rejected | PASS | none | HTTP 400 for malformed financial input |
+| infinite_transaction_rejected | PASS | none | HTTP 400 for malformed financial input |
+| invalid_period_rejected | PASS | none | HTTP 400 for malformed financial input |
 | missing_column_rejected | PASS | none | HTTP 400 |
 | failed_upload_is_atomic | PASS | none | Failed upload preserves prior store |
 | reset_sample | PASS | none | Bundled sample restored after audit |
@@ -44,4 +44,4 @@ Exit code 1 signals detected product failures. Generated fixtures are under `tes
 
 ## Release interpretation
 
-Passing deterministic checks establishes behavior only for these cases. Provider scripting verifies tool execution and event transport, not whether a real model selects the right tools, cites evidence correctly, resists malicious memos, or writes faithful conclusions. Invalid-input rejection and absent-period handling must be addressed before treating uploads as trustworthy.
+Passing deterministic checks establishes behavior only for these cases. Provider scripting verifies tool execution and event transport, not whether a real model selects the right tools, cites evidence correctly, resists malicious memos, or writes faithful conclusions. The original six failures are preserved in synthetic-product-before-fixes.json; consult the current results above for their status.
