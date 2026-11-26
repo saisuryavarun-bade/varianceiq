@@ -67,8 +67,10 @@ TOOLS: list[dict] = [
         "description": (
             "Inspect transaction-level detail for a specific (period, department, account) "
             "combination. Returns the underlying journal-entry-level transactions, including "
-            "vendor, amount, date, and memo. Use this to identify the actual driver of a "
-            "variance."
+            "vendor, exact decimal amount, date, memo and snapshot-scoped source IDs. "
+            "Full matching totals are separate from returned-row subtotals; check "
+            "is_truncated and reconciliation before drawing conclusions. A matched "
+            "sum does not establish a causal driver."
         ),
         "input_schema": {
             "type": "object",

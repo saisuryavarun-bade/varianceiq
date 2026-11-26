@@ -11,6 +11,7 @@ from typing import Any
 import pandas as pd
 
 from app.data_loader import DataStore
+from app.evidence import transaction_evidence
 
 
 def _format_currency(value: float) -> str:
@@ -129,40 +130,14 @@ def drill_down_variance(
     account: str,
     limit: int = 25,
 ) -> dict[str, Any]:
-    txn = store.transactions
-    df = txn[
-        (txn["period"] == period)
-        & (txn["department"].str.lower() == department.lower())
-        & (txn["account"].str.lower() == account.lower())
-    ].copy()
-
-    if df.empty:
-        return {
-            "transaction_count": 0,
-            "transactions": [],
-            "note": "No transactions found for this slice.",
-        }
-
-    df = df.sort_values("amount", key=lambda s: s.abs(), ascending=False).head(limit)
-
-    transactions = []
-    for _, r in df.iterrows():
-        transactions.append(
-            {
-                "date": r["date"],
-                "vendor": r["vendor"],
-                "amount": _format_currency(float(r["amount"])),
-                "memo": r["memo"],
-            }
-        )
-
+    evidence = transaction_evidence(store, period, department, account, limit)
+    for row in evidence["transactions"]:
+        row["amount"] = _format_currency(float(row["amount_exact"]))
     return {
-        "period": period,
-        "department": department,
-        "account": account,
-        "transaction_count": len(transactions),
-        "total_amount": _format_currency(float(df["amount"].sum())),
-        "transactions": transactions,
+        "period": period, "department": department, "account": account,
+        **evidence,
+        "total_amount": _format_currency(float(evidence["total_amount_exact"])),
+        "returned_amount": _format_currency(float(evidence["returned_amount_exact"])),
     }
 
 

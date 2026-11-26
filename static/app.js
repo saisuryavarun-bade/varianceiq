@@ -211,9 +211,12 @@ function updateToolResult(data) {
   }
 
   if (data.name === "drill_down_variance" && result?.transactions) {
-    slot.textContent = `↳ ${result.transaction_count} transaction${result.transaction_count === 1 ? "" : "s"}, total: ${result.total_amount}`;
+    const shown = Math.min(result.transactions.length, 8);
+    const matching = result.matching_transaction_count ?? result.transaction_count;
+    const reconciliation = result.reconciliation?.status?.replaceAll("_", " ") ?? "not checked";
+    slot.textContent = `↳ Showing ${shown} of ${matching} matching transactions. Full ledger total: ${result.total_amount_exact ?? result.total_amount}. Reconciliation: ${reconciliation}.`;
     if (result.transactions.length > 0) {
-      const cols = ["vendor","amount","memo"];
+      const cols = ["source_row","vendor","amount_exact","memo"];
       slot.innerHTML += renderTable(cols, result.transactions.slice(0, 8).map(t => cols.map(c => t[c])));
     }
     return;
