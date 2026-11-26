@@ -65,8 +65,8 @@ def drill(limit=25, period='2026-09'):
 
 
 class Block:
-    def __init__(self, **data):self.data=data
-    def model_dump(self):return self.data
+    def __init__(self, **data):self.data=data;self.__dict__.update(data)
+    def model_dump(self, **kwargs):return self.data
 
 
 class ScriptedStream:
@@ -74,16 +74,16 @@ class ScriptedStream:
     def __enter__(self):return self
     def __exit__(self,*args):return False
     def __iter__(self):return iter(())
-    def get_final_message(self):
+    def get_final_response(self):
         if self.turn == 0:
             specs=[('get_dataset_overview',{}),
                    ('query_variances',{'min_abs_variance':0}),
                    ('drill_down_variance',dict(period='2026-09',department='Operations',account='Contractors',limit=5)),
                    ('compose_executive_summary',{'investigation_complete':True})]
-            return SimpleNamespace(stop_reason='tool_use',content=[
-                Block(type='tool_use',id=f'test-{i}',name=name,input=args) for i,(name,args) in enumerate(specs)])
-        return SimpleNamespace(stop_reason='end_turn',content=[
-            Block(type='text',text='Scripted synthetic completion, not an AI-generated analysis.')])
+            return SimpleNamespace(status='completed',output=[
+                Block(type='function_call',call_id=f'test-{i}',name=name,arguments=json.dumps(args)) for i,(name,args) in enumerate(specs)])
+        return SimpleNamespace(status='completed',output=[],
+            output_text='Scripted synthetic completion, not an AI-generated analysis.')
 
 
 class ScriptedMessages:
@@ -120,9 +120,9 @@ def run():
                'All 40 transactions counted across vendors',vendors)
 
         scripted=ScriptedMessages()
-        fake_provider=SimpleNamespace(messages=scripted)
-        with patch.object(product.settings,'anthropic_api_key','synthetic-local-placeholder'), \
-             patch.object(agent_module,'Anthropic',return_value=fake_provider):
+        fake_provider=SimpleNamespace(responses=scripted,close=lambda:None)
+        with patch.object(product.settings,'openai_api_key','synthetic-local-placeholder'), \
+             patch.object(agent_module,'OpenAI',return_value=fake_provider):
             stream=client.get('/api/investigate?period=2026-09')
         events=[json.loads(line[6:]) for line in stream.text.splitlines() if line.startswith('data: ')]
         tool_results=[e for e in events if e.get('type')=='tool_result']
@@ -184,7 +184,7 @@ def run():
         reset=client.post('/api/reset');restored=client.get('/api/dataset').json()
         record('reset_sample',reset.status_code==200 and restored['row_count']==75 and restored['transaction_count']==78,
                'Bundled sample restored after audit',restored)
-        with patch.object(product.settings,'anthropic_api_key',''):
+        with patch.object(product.settings,'openai_api_key',''):
             blocked=client.get('/api/investigate')
         record('missing_model_key_handled',blocked.status_code==400,'HTTP 400 with configuration error',blocked.json())
 

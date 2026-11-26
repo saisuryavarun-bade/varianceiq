@@ -17,7 +17,7 @@ from app.agent import VarianceAgent
 def main():
     os.chdir(ROOT)
     settings = get_settings()
-    if not settings.anthropic_api_key:
+    if not settings.openai_api_key:
         print('No API key configured. Run python scripts/configure_model.py in a terminal.')
         return 2
     settings.max_agent_iterations = 6
@@ -40,7 +40,7 @@ def main():
             agent.client.close()
     finished = any(e['type']=='final' and e.get('markdown') for e in events)
     success = bool(finished and events[-1]['type']=='done' and not any(e['type']=='error' for e in events))
-    report = dict(model=settings.anthropic_model, live_model_tested=True,
+    report = dict(model=settings.openai_model, live_model_tested=True,
                   completed=success, accuracy_review_required=True,
                   expected=dict(actual=40780, budget=30000, variance=10780,
                                 variance_percent=35.9333333333, transaction_count=40,

@@ -1,4 +1,4 @@
-"""Tool schemas exposed to Claude via the native tool-use API."""
+"""Tool schemas exposed to OpenAI via the native tool-use API."""
 from __future__ import annotations
 
 TOOLS: list[dict] = [
@@ -9,7 +9,9 @@ TOOLS: list[dict] = [
             "row count, period range, list of departments, list of GL accounts, and "
             "total budgeted vs actual amounts. Always call this first."
         ),
-        "input_schema": {
+        "type": "function",
+        "strict": False,
+        "parameters": {
             "type": "object",
             "properties": {},
             "required": [],
@@ -23,7 +25,9 @@ TOOLS: list[dict] = [
             "sorted by absolute variance descending. Use this to identify material variances "
             "to investigate."
         ),
-        "input_schema": {
+        "type": "function",
+        "strict": False,
+        "parameters": {
             "type": "object",
             "properties": {
                 "period": {
@@ -72,7 +76,9 @@ TOOLS: list[dict] = [
             "is_truncated and reconciliation before drawing conclusions. A matched "
             "sum does not establish a causal driver."
         ),
-        "input_schema": {
+        "type": "function",
+        "strict": False,
+        "parameters": {
             "type": "object",
             "properties": {
                 "period": {
@@ -102,7 +108,9 @@ TOOLS: list[dict] = [
             "department/account filter. Returns top vendors by spend. Useful for identifying "
             "concentration risk or one-off vendor spend."
         ),
-        "input_schema": {
+        "type": "function",
+        "strict": False,
+        "parameters": {
             "type": "object",
             "properties": {
                 "period": {
@@ -122,7 +130,9 @@ TOOLS: list[dict] = [
             "Compare actuals between two periods for the same department/account. "
             "Useful for distinguishing a one-time event from a structural trend."
         ),
-        "input_schema": {
+        "type": "function",
+        "strict": False,
+        "parameters": {
             "type": "object",
             "properties": {
                 "period_a": {"type": "string", "description": "e.g. '2024-09'"},
@@ -140,7 +150,9 @@ TOOLS: list[dict] = [
             "executive summary. Calling this tool returns a checklist of what the summary "
             "should include. Always call this BEFORE writing your final markdown summary."
         ),
-        "input_schema": {
+        "type": "function",
+        "strict": False,
+        "parameters": {
             "type": "object",
             "properties": {
                 "investigation_complete": {

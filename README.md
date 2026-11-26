@@ -17,7 +17,7 @@ The agent is fully autonomous. You upload data, it investigates, and it produces
 
 ## Why this is interesting
 
-- **Real agentic behavior, not a chatbot.** The agent uses native [Anthropic tool use](https://docs.claude.com/en/docs/agents-and-tools/tool-use/overview) to autonomously plan and execute a multi-step investigation. There is a custom orchestration loop — no LangChain, no LlamaIndex — so reviewers see exactly what happens in ~130 lines of [`app/agent.py`](app/agent.py).
+- **Real agentic behavior, not a chatbot.** The agent uses native [OpenAI tool use](https://developers.openai.com/api/docs/guides/function-calling) to autonomously plan and execute a multi-step investigation. There is a custom orchestration loop — no LangChain, no LlamaIndex — so reviewers see exactly what happens in ~130 lines of [`app/agent.py`](app/agent.py).
 - **6 purpose-built tools.** `get_dataset_overview`, `query_variances`, `drill_down_variance`, `summarize_vendor_spend`, `compare_period_over_period`, `compose_executive_summary`. Each tool has a clear behavioral description that shapes the agent's investigation strategy.
 - **Production patterns.** SSE streaming, structured error payloads, graceful tool dispatch, bounded iteration limits, Docker + Render deploy config, CI on push.
 - **Real domain logic.** The system prompt encodes how a senior analyst thinks (materiality thresholds, driver vs. symptom distinction, severity flags). The sample dataset has deliberately-planted variance patterns that produce a genuinely useful memo.
@@ -39,7 +39,7 @@ The agent is fully autonomous. You upload data, it investigates, and it produces
    └────────────┬─────────────┘
                 │
    ┌────────────▼─────────────────────────────┐
-   │  Agent loop (Anthropic native tool use)  │
+   │  Agent loop (OpenAI native tool use)  │
    │                                          │
    │   plan ──► call tool ──► observe ──► …   │
    │                                          │
@@ -63,7 +63,7 @@ The agent is fully autonomous. You upload data, it investigates, and it produces
 ```bash
 git clone https://github.com/<you>/varianceiq.git
 cd varianceiq
-echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
+python scripts/configure_model.py
 docker compose up --build
 ```
 
@@ -77,11 +77,11 @@ cd varianceiq
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python scripts/generate_sample_data.py
-cp .env.example .env   # add your API key
+python scripts/configure_model.py
 uvicorn app.main:app --reload
 ```
 
-You'll need an [Anthropic API key](https://console.anthropic.com). A typical investigation costs **under $0.05** with `claude-sonnet-4-6`.
+You'll need an [OpenAI API key](https://platform.openai.com/api-keys). API usage is billed according to your selected model and token usage; no fixed per-investigation cost is guaranteed.
 
 ## Bringing your own data
 
@@ -111,7 +111,7 @@ varianceiq/
 │   ├── main.py             # FastAPI app + SSE endpoint
 │   ├── agent.py            # orchestration loop (~130 lines)
 │   ├── tools/
-│   │   ├── definitions.py  # tool schemas for Anthropic API
+│   │   ├── definitions.py  # tool schemas for OpenAI API
 │   │   └── handlers.py     # tool implementations (pandas)
 │   ├── data_loader.py      # CSV ingestion + validation
 │   ├── prompts.py          # system prompt
@@ -146,7 +146,7 @@ pytest tests/ -v
 
 | Decision | Why |
 |---|---|
-| Anthropic native tool use (no LangChain) | Reviewers see the actual loop. ~130 lines, no hidden behavior. |
+| OpenAI native tool use (no LangChain) | Reviewers see the actual loop. ~130 lines, no hidden behavior. |
 | 6 purpose-built tools (not raw SQL) | Each tool has a clear purpose. Fewer failure modes than free-form SQL. |
 | Pandas in-memory | Zero infra. Simple. Fast for the dataset sizes FP&A teams work with. |
 | SSE instead of WebSockets | Agent stream is one-way. SSE is simpler and survives proxies. |

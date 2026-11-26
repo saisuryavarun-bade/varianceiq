@@ -10,8 +10,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings."""
 
-    anthropic_api_key: str = ""
-    anthropic_model: str = "claude-sonnet-4-6"
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4.1-mini"
     host: str = "0.0.0.0"
     port: int = 8000
     debug: bool = False

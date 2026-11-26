@@ -1,6 +1,6 @@
 {
   "date": "2026-11-26",
-  "commit_under_test": "b6973653db8c77bf016937886a7fa1b634607883",
+  "commit_under_test": "6f8809faa166dd9b7035dc789079f23809d7e502",
   "scope": "CSV upload, real tools, API and real agent SSE orchestration with scripted provider",
   "live_model_tested": false,
   "browser_ui_tested": false,
@@ -686,7 +686,7 @@
       "passed": true,
       "expected": "HTTP 400 with configuration error",
       "observed": {
-        "error": "ANTHROPIC_API_KEY is not configured on the server. Set it in .env or as an environment variable."
+        "error": "OPENAI_API_KEY is not configured on the server. Set it in .env or as an environment variable."
       },
       "severity": "none"
     }

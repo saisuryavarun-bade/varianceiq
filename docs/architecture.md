@@ -1,73 +1,27 @@
 # Architecture
 
-## Request lifecycle
+## Data and request lifecycle
 
-1. **Upload** — `POST /api/upload` accepts a `budget_vs_actuals` CSV and an optional `transactions` CSV. The server creates a fresh `DataStore` (a new in-memory DuckDB), validates and normalizes columns, computes `variance_amount` / `variance_pct` if missing, and returns a session ID plus a summary ribbon of stats.
+The FastAPI server keeps one active in-memory pandas DataStore per process. POST /api/upload accepts budget_file and transactions_file CSVs. Validation rejects missing columns, empty budget data, malformed periods, missing grouping labels, and nonfinite or nonnumeric amounts before replacing the active store. This is a single-user prototype: uploads are shared across clients of that process, not isolated sessions.
 
-2. **Investigate** — `GET /api/investigate/{session_id}` opens a Server-Sent Events stream. The route constructs an `Agent` bound to the session's DataStore and yields events from the agent loop in real time:
+GET /api/investigate opens an SSE stream and binds a VarianceAgent to the current store. The agent calls OpenAI's Responses API with six function tools. Tools calculate results locally; model-selected arguments determine which dataset slices are returned to OpenAI. No arbitrary SQL or code execution is exposed.
 
-   ```
-   status     → high-level lifecycle messages
-   thinking   → free-text reasoning the model emitted between tool calls
-   tool_call  → name + arguments of a tool the model invoked
-   tool_result→ matched to its tool_call by id
-   finding    → a confirmed insight (parallel to a record_finding tool call)
-   report     → the final executive memo
-   done       → terminal event with turn / finding counts
-   error      → any failure
-   ```
+## Model loop
 
-3. **Browser** consumes events via `EventSource`, renders the agent's reasoning into the left panel, and grows the findings/report panel on the right.
+Each turn streams visible response text, gathers function calls, validates that arguments decode to a JSON object, and dispatches tools. Function results are sent back with the matching call_id. All response output items are retained for continuation. Optional tool arguments remain optional through explicit strict=false. The request uses store=false; this setting does not mean no provider processing or retention under applicable API policies.
 
-## Why a custom agent loop
+The loop ends with a nonempty final response or an error when the configured turn budget is exhausted. Provider errors, incomplete responses, empty text, and prematurely closed streams do not emit successful completion. Provider exception bodies are not exposed to the browser. The SDK client closes when the generator finishes or is closed.
 
-Most agent demos lean on LangChain or LlamaIndex. Two reasons VarianceIQ doesn't:
+## Streaming contract
 
-1. **Transparency for reviewers.** The whole loop is in `app/agent.py`. There is no hidden prompt, no wrapper class, no abstraction layer. Anyone can read it in 60 seconds and know what's happening.
-2. **Streaming control.** We need fine-grained events emitted *between* tool calls — not just final answers. Frameworks make this awkward.
+The existing frontend receives status, thinking (visible text deltas, not private reasoning), tool_call, tool_result, final, done, and error events. No frontend event migration is required.
 
-The loop is a textbook implementation of Anthropic's tool-use protocol:
+## Evidence
 
-```python
-while turn < MAX_TURNS:
-    response = await client.messages.create(
-        model=MODEL,
-        system=SYSTEM_PROMPT,
-        tools=TOOLS,
-        messages=conversation,
-    )
-    for block in response.content:
-        if block.type == "text":
-            stream("thinking", block.text)
-        elif block.type == "tool_use":
-            stream("tool_call", block)
-            result = execute_tool(block.name, block.input, store, state)
-            stream("tool_result", result)
-            collect_into_next_user_turn(result)
+Financial arithmetic, source-row references, full-slice totals, and reconciliation are implemented by local tools. Missing comparison periods are explicitly reported with null comparisons. See evidence-contract.md for limits. A successful API call does not establish narrative accuracy or causal truth; review the real-model trace against known synthetic outcomes.
 
-    if state.report is not None:        # finalize_report was called
-        break
-```
+## Configuration and tests
 
-## Data isolation
+OPENAI_API_KEY is server-side only; OPENAI_MODEL defaults to gpt-4.1-mini and can be changed to a compatible model. Docker Compose and Render use these same variables. No Anthropic credentials are used.
 
-Each upload creates a brand-new in-memory DuckDB instance. There is no cross-session table, no shared state, and no way for one user's queries to see another's data. This is enforced by `DataStore.__init__` which calls `duckdb.connect(":memory:")` — this is per-process-thread isolated by DuckDB itself.
-
-## SQL safety
-
-The agent has full SQL expressivity, but the runtime checks every query against an allowlist (`SELECT`, `WITH`, `DESCRIBE`, `SHOW`, `EXPLAIN`, `PRAGMA`) and rejects anything containing forbidden tokens (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `CREATE`, `ALTER`, `TRUNCATE`, `ATTACH`, `COPY`). DuckDB itself enforces a hard limit on result-set size in the application code (max 200 rows returned to the model).
-
-## Streaming protocol
-
-`sse-starlette`'s `EventSourceResponse` emits events with the SSE `event:` field set to the event kind (`thinking`, `tool_call`, etc.). The frontend registers one handler per kind via `addEventListener`, which avoids string-discriminator parsing on the client.
-
-## Failure modes and recovery
-
-| Failure | Response |
-|---|---|
-| Model produces malformed JSON for tool input | Anthropic SDK validates against `input_schema` and returns an error the model can read |
-| SQL syntax error | Returned as `{error: "..."}` to the model — agent retries |
-| Forbidden write SQL | Same. Agent retries with a SELECT |
-| Model exceeds turn budget | `error` event is sent and stream closes |
-| Client disconnects | `request.is_disconnected()` is checked each iteration; loop aborts |
-| Anthropic API failure | Caught by the publisher, surfaced as an `error` event with type info |
+Unit tests use the actual OpenAI SDK with a local HTTP mock serving SSE events. The synthetic product audit separately exercises upload, tools, and the application's SSE orchestration using a scripted provider. Neither requires a live key. See model-testing.md for the separately invoked live investigation.

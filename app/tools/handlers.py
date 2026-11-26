@@ -1,6 +1,6 @@
 """Tool implementations.
 
-The agent calls these via Claude's native tool-use API. Each handler takes a JSON
+The agent calls these via OpenAI's native tool-use API. Each handler takes a JSON
 input dict and returns a JSON-serializable dict. All work is done against pandas
 DataFrames held in the in-memory `DataStore`.
 """

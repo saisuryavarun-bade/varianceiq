@@ -106,12 +106,12 @@ def reset_dataset() -> dict[str, Any]:
 @app.get("/api/investigate")
 async def investigate(period: str = "YTD", query: str | None = None):
     """Stream the agent's investigation as Server-Sent Events."""
-    if not settings.anthropic_api_key:
+    if not settings.openai_api_key:
         return JSONResponse(
             status_code=400,
             content={
                 "error": (
-                    "ANTHROPIC_API_KEY is not configured on the server. "
+                    "OPENAI_API_KEY is not configured on the server. "
                     "Set it in .env or as an environment variable."
                 )
             },
@@ -131,6 +131,6 @@ def health() -> dict[str, Any]:
     return {
         "status": "ok",
         "version": __version__,
-        "model": settings.anthropic_model,
-        "key_configured": bool(settings.anthropic_api_key),
+        "model": settings.openai_model,
+        "key_configured": bool(settings.openai_api_key),
     }

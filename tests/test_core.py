@@ -135,7 +135,7 @@ def test_unknown_tool_returns_error():
 
 def test_health_endpoint():
     import os
-    os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
+    os.environ.setdefault("OPENAI_API_KEY", "test-key")
     from app.main import app
     from fastapi.testclient import TestClient
     client = TestClient(app)
@@ -146,7 +146,7 @@ def test_health_endpoint():
 
 def test_dataset_endpoint():
     import os
-    os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
+    os.environ.setdefault("OPENAI_API_KEY", "test-key")
     from app.main import app
     from fastapi.testclient import TestClient
     client = TestClient(app)
@@ -159,7 +159,7 @@ def test_dataset_endpoint():
 
 def test_index_serves_html():
     import os
-    os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
+    os.environ.setdefault("OPENAI_API_KEY", "test-key")
     from app.main import app
     from fastapi.testclient import TestClient
     client = TestClient(app)
