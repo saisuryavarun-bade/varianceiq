@@ -5,7 +5,16 @@ Validated 27 November 2026. No live model calls were made.
 - Full Python suite: **73 passed**. Includes deterministic review tests, upload limits and atomicity, input validation, evidence arithmetic, missing periods, report identity, selected-scope AI payloads, stale-report rejection, reference validation, and OpenAI SDK behavior using local HTTP mocks.
 - Existing synthetic product audit: **25 passed, 0 failed**. Its legacy SSE path is explicitly enabled within the test only; it is disabled in the product by default.
 - JavaScript syntax: `node --check static/app.js` passed.
-- Browser preview: local server started successfully, but the browser automation runtime failed before opening a page with a missing kernel-assets path. Layout and interactive browser behavior remain unverified.
+- Browser verification: **8 checks passed in real headless Microsoft Edge**, using a temporary localhost server and synthetic data. Desktop (1440px) and mobile (390px) screenshots were visually inspected. Checks cover loading without a key, filters and selection, JSON/CSV exports with notes, real CSV uploads and evidence truncation, mobile overflow, AI failure recovery, safe draft rendering, and absence of JavaScript errors. AI responses in browser tests are explicitly mocked, not live.
+- Browser testing found and corrected corrupted UTF-8 separators, ellipses, and minus symbols in the frontend. The repeated browser run passed after the fix.
+
+Reproduce with `pip install -r requirements-dev.txt` and `python scripts/test_browser.py` (requires installed Microsoft Edge). The runner starts and stops its own isolated server, disables credentials, and writes screenshots/results to ignored `data/browser-test-results/`. Synthetic verification screenshots are also available under `docs/testing/browser/`.
+
+## Live AI evaluation status
+
+The five-case runner is ready: `python scripts/evaluate_live_ai.py --live`. It evaluates the actual finding-level adapter against a reconciled truncated ledger, a mismatch, absent ledger evidence, a credit with zero budget, and an injected instruction inside a memo. It makes at most five requests, stops after a provider/validation failure, and saves traces locally in the ignored live-test-results folder.
+
+Execution was attempted but stopped before any provider request because OPENAI_API_KEY was absent. Live claim accuracy and injection resistance are therefore **not evaluated**. Each case includes an explicit review rubric; successful completion and valid references must not be reported as a semantic-accuracy pass.
 
 ## Original bundled sample
 

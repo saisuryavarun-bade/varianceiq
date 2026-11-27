@@ -19,3 +19,4 @@ build/
 *.log
 data/uploads/
 data/live-test-results/
+data/browser-test-results/

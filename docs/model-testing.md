@@ -1,6 +1,6 @@
 # Real model testing
 
-The main product now performs a deterministic review first. Use its finding-level “Investigate with AI” button to test the new scoped adapter. It returns an unverified structured draft and checks whether its references resolve. No live evaluation of that adapter has been completed. The command below exercises the earlier autonomous agent as a research baseline, not the new product workflow.
+The main product now performs a deterministic review first. Use its finding-level “Investigate with AI” button to test the new scoped adapter. It returns an unverified structured draft and checks whether its references resolve. For a bounded five-case evaluation of that same adapter, run `python scripts/evaluate_live_ai.py --live`. Run it without `--live` to validate the fixtures without network calls. Review every saved draft against its rubric; citation existence alone is not an accuracy result. No live evaluation has been completed yet because the local key is absent. The older command below exercises the autonomous agent as a research baseline, not the new product workflow.
 
 The product uses the OpenAI Responses API, with `gpt-4.1-mini` as the configurable default. Create an API key at https://platform.openai.com/api-keys. A chat subscription does not automatically configure this application. See the [OpenAI quickstart](https://developers.openai.com/api/docs/quickstart).
 

@@ -11,7 +11,7 @@ async function refresh(){
   if(state.busy) return;
   const threshold=$("#threshold").value;
   if(threshold==="" || !Number.isFinite(Number(threshold)) || Number(threshold)<0){ notice("Enter a nonnegative materiality threshold.",true); return; }
-  lock(true); notice("Calculating your reviewâ€¦");
+  lock(true); notice("Calculating your review…");
   try {
     const params=new URLSearchParams({min_abs_variance:threshold}); if($("#period").value) params.set("period",$("#period").value);
     const report=await api("/api/review?"+params);
@@ -25,21 +25,21 @@ async function refresh(){
 }
 function render(){
   const r=state.report,t=r.totals;
-  $("#metrics").innerHTML=[["Recorded budget",amount(t.budget_exact)],["Recorded actual",amount(t.actual_exact)],["Actual âˆ’ budget",amount(t.variance_exact)],["Material findings",t.material_count+" / "+t.group_count]].map(([name,value])=>'<div class="metric"><span>'+name+'</span><strong>'+(r.status==="no_data"?"Not available":esc(value))+'</strong></div>').join("");
-  $("#coverage").textContent=t.matched_count+" reconciled Â· "+t.mismatch_count+" mismatches Â· "+t.insufficient_count+" with insufficient evidence";
+  $("#metrics").innerHTML=[["Recorded budget",amount(t.budget_exact)],["Recorded actual",amount(t.actual_exact)],["Actual − budget",amount(t.variance_exact)],["Material findings",t.material_count+" / "+t.group_count]].map(([name,value])=>'<div class="metric"><span>'+name+'</span><strong>'+(r.status==="no_data"?"Not available":esc(value))+'</strong></div>').join("");
+  $("#coverage").textContent=t.matched_count+" reconciled · "+t.mismatch_count+" mismatches · "+t.insufficient_count+" with insufficient evidence";
   const warnings=[];
   if(r.quality.unmapped_transaction_rows.length) warnings.push(r.quality.unmapped_transaction_rows.length+" transaction rows have no matching budget scope; see source rows in the exported packet.");
   if(r.quality.duplicate_candidate_rows) warnings.push(r.quality.duplicate_candidate_rows+" transaction rows belong to identical-row duplicate candidates. They remain in totals.");
   $("#quality").textContent=warnings.join(" ");
   $("#methods").innerHTML=r.methodology.map(m=>"<li>"+esc(m)+"</li>").join("");
-  $("#identity").textContent="Engine "+r.engine_version+" Â· Review "+r.review_id;
+  $("#identity").textContent="Engine "+r.engine_version+" · Review "+r.review_id;
   renderQueue(); renderDetail();
 }
 function renderQueue(){
   if(!state.report) return;
   const search=$("#search").value.toLowerCase();
   const findings=state.report.findings.filter(f=>(!$("#material-only").checked || f.material) && (f.department+" "+f.account+" "+f.period).toLowerCase().includes(search));
-  $("#findings").innerHTML=findings.map(f=>'<tr class="'+(f.id===state.selected?"selected":"")+'"><td><button class="row-button" data-finding="'+esc(f.id)+'" aria-pressed="'+(f.id===state.selected)+'">'+esc(f.account)+'</button><small>'+esc(f.department)+" Â· "+esc(f.period)+(f.material?" Â· Material":"")+'</small></td><td class="amount">'+esc(amount(f.variance_exact))+'<small>'+esc(label(f.direction))+'</small></td><td><span class="pill '+f.evidence.reconciliation.status+'">'+label(f.evidence.reconciliation.status)+'</span></td></tr>').join("");
+  $("#findings").innerHTML=findings.map(f=>'<tr class="'+(f.id===state.selected?"selected":"")+'"><td><button class="row-button" data-finding="'+esc(f.id)+'" aria-pressed="'+(f.id===state.selected)+'">'+esc(f.account)+'</button><small>'+esc(f.department)+" · "+esc(f.period)+(f.material?" · Material":"")+'</small></td><td class="amount">'+esc(amount(f.variance_exact))+'<small>'+esc(label(f.direction))+'</small></td><td><span class="pill '+f.evidence.reconciliation.status+'">'+label(f.evidence.reconciliation.status)+'</span></td></tr>').join("");
   $("#empty").classList.toggle("hidden",findings.length>0);
   $("#findings").querySelectorAll("[data-finding]").forEach(button=>button.addEventListener("click",()=>{state.selected=button.dataset.finding;renderQueue();renderDetail();}));
 }
@@ -49,14 +49,14 @@ function renderDetail(){
   if(!f){ $("#detail").innerHTML='<div class="empty">No finding selected. Choose a period with data.</div>'; return; }
   const e=f.evidence,rec=e.reconciliation,c=f.comparison,key=noteKey(),note=state.notes[key] || {};
   const flags=f.flags.map(flag=>'<div class="flag">'+esc(label(flag))+'</div>').join("");
-  $("#detail").innerHTML='<span class="scope">'+esc(f.period)+" / "+esc(f.department)+'</span><h2>'+esc(f.account)+'</h2><span class="pill '+rec.status+'">'+label(rec.status)+'</span><div class="detail-stats">'+[["Budget",f.budget_exact],["Actual",f.actual_exact],["Variance",f.variance_exact]].map(([n,v])=>'<div><small>'+n+'</small><strong>'+esc(amount(v))+'</strong></div>').join("")+'</div><p class="subtle">'+esc(label(f.direction))+" Â· "+(f.variance_percent===null?"Percentage unavailable: zero budget.":esc(Number(f.variance_percent).toFixed(2))+"% of absolute budget.")+'</p>'+flags+
-  '<h3>Prior-month comparison</h3><p class="subtle">'+(c.status==="missing"?"No matching "+esc(c.period)+" records. No change is calculated.":esc(c.period)+" actual: "+esc(amount(c.actual_exact))+" Â· Change: "+esc(amount(c.change_exact)))+'</p>'+
-  '<h3>Transaction evidence</h3><div class="evidence-summary">Full matching ledger: <strong>'+esc(amount(e.total_amount_exact))+'</strong><br>Ledger minus recorded actual: '+esc(amount(rec.ledger_minus_actual_exact))+'<br>Showing '+e.transaction_count+" of "+e.matching_transaction_count+" transactions Â· Displayed subtotal: "+esc(amount(e.returned_amount_exact))+'</div>'+
-  '<details><summary>Inspect transaction rows and source references</summary><div class="table-wrap"><table><thead><tr><th>Source / vendor</th><th>Amount</th><th>Memo</th></tr></thead><tbody>'+e.transactions.map(t=>'<tr><td>Row '+t.source_row+" Â· "+esc(t.vendor)+'<span class="source-id">'+esc(t.source_id)+'</span></td><td class="amount">'+esc(amount(t.amount_exact))+'</td><td>'+esc(t.memo)+'</td></tr>').join("")+'</tbody></table></div>'+(e.transactions.length?"":'<p class="subtle">No matching transaction evidence was supplied.</p>')+'</details>'+
+  $("#detail").innerHTML='<span class="scope">'+esc(f.period)+" / "+esc(f.department)+'</span><h2>'+esc(f.account)+'</h2><span class="pill '+rec.status+'">'+label(rec.status)+'</span><div class="detail-stats">'+[["Budget",f.budget_exact],["Actual",f.actual_exact],["Variance",f.variance_exact]].map(([n,v])=>'<div><small>'+n+'</small><strong>'+esc(amount(v))+'</strong></div>').join("")+'</div><p class="subtle">'+esc(label(f.direction))+" · "+(f.variance_percent===null?"Percentage unavailable: zero budget.":esc(Number(f.variance_percent).toFixed(2))+"% of absolute budget.")+'</p>'+flags+
+  '<h3>Prior-month comparison</h3><p class="subtle">'+(c.status==="missing"?"No matching "+esc(c.period)+" records. No change is calculated.":esc(c.period)+" actual: "+esc(amount(c.actual_exact))+" · Change: "+esc(amount(c.change_exact)))+'</p>'+
+  '<h3>Transaction evidence</h3><div class="evidence-summary">Full matching ledger: <strong>'+esc(amount(e.total_amount_exact))+'</strong><br>Ledger minus recorded actual: '+esc(amount(rec.ledger_minus_actual_exact))+'<br>Showing '+e.transaction_count+" of "+e.matching_transaction_count+" transactions · Displayed subtotal: "+esc(amount(e.returned_amount_exact))+'</div>'+
+  '<details><summary>Inspect transaction rows and source references</summary><div class="table-wrap"><table><thead><tr><th>Source / vendor</th><th>Amount</th><th>Memo</th></tr></thead><tbody>'+e.transactions.map(t=>'<tr><td>Row '+t.source_row+" · "+esc(t.vendor)+'<span class="source-id">'+esc(t.source_id)+'</span></td><td class="amount">'+esc(amount(t.amount_exact))+'</td><td>'+esc(t.memo)+'</td></tr>').join("")+'</tbody></table></div>'+(e.transactions.length?"":'<p class="subtle">No matching transaction evidence was supplied.</p>')+'</details>'+
   '<details><summary>Inspect budget source references</summary>'+f.budget_evidence.map(b=>'<p class="subtle">Row '+b.source_row+' · Budget '+esc(amount(b.budget))+' · Actual '+esc(amount(b.actual))+'</p><span class="source-id">'+esc(b.source_id)+'</span>').join("")+'<p class="subtle">One-based loaded budget data rows, excluding the CSV header.</p></details>'+
   '<p class="subtle">'+esc(f.conclusion)+'</p>'+
   '<section class="review-note"><label for="note">Analyst note</label><textarea id="note" placeholder="Record context, missing evidence, or follow-up actions.">'+esc(note.text || "")+'</textarea><label class="check"><input id="reviewed" type="checkbox" '+(note.reviewed?"checked":"")+'>I have reviewed this finding</label><small class="subtle">Personal review marker, not an approval or audit signature. Included in JSON exports.</small></section>'+
-  '<section class="ai-box"><h3>Optional AI investigation</h3><p class="subtle">Sends this finding and up to 25 supporting transaction rows to OpenAI. Uses API credits. The result is a draft for your review.</p><button id="investigate" '+(!state.ai || state.pending?"disabled":"")+'>'+(state.pending?"AI investigation runningâ€¦":"Investigate with AI")+'</button><p class="subtle">'+(state.ai?"One bounded request. Your calculated review is unchanged.":"AI is unavailable. Configure a server API key to enable it; all review features work without one.")+'</p><div id="draft"></div></section>';
+  '<section class="ai-box"><h3>Optional AI investigation</h3><p class="subtle">Sends this finding and up to 25 supporting transaction rows to OpenAI. Uses API credits. The result is a draft for your review.</p><button id="investigate" '+(!state.ai || state.pending?"disabled":"")+'>'+(state.pending?"AI investigation running…":"Investigate with AI")+'</button><p class="subtle">'+(state.ai?"One bounded request. Your calculated review is unchanged.":"AI is unavailable. Configure a server API key to enable it; all review features work without one.")+'</p><div id="draft"></div></section>';
   $("#note").addEventListener("input",saveNote); $("#reviewed").addEventListener("change",saveNote);
   $("#investigate").addEventListener("click",investigate);
   if(state.drafts[key]) renderDraft(state.drafts[key]);
@@ -73,7 +73,7 @@ async function investigate(){
   finally{state.pending=null; if(state.report) renderDetail();}
 }
 function renderDraft(d){
-  $("#draft").innerHTML='<div class="draft"><strong>AI draft Â· Not verified</strong><p>'+esc(d.limitation)+'</p><h4>Suggested observations</h4><ul>'+d.observations.map(o=>'<li>'+esc(o.claim)+o.source_ids.map(s=>'<span class="source-id">'+esc(s)+'</span>').join("")+'</li>').join("")+'</ul><h4>Hypotheses, not established causes</h4><ul>'+d.hypotheses.map(s=>'<li>'+esc(s)+'</li>').join("")+'</ul><h4>Questions to resolve</h4><ul>'+d.questions.map(s=>'<li>'+esc(s)+'</li>').join("")+'</ul></div>';
+  $("#draft").innerHTML='<div class="draft"><strong>AI draft · Not verified</strong><p>'+esc(d.limitation)+'</p><h4>Suggested observations</h4><ul>'+d.observations.map(o=>'<li>'+esc(o.claim)+o.source_ids.map(s=>'<span class="source-id">'+esc(s)+'</span>').join("")+'</li>').join("")+'</ul><h4>Hypotheses, not established causes</h4><ul>'+d.hypotheses.map(s=>'<li>'+esc(s)+'</li>').join("")+'</ul><h4>Questions to resolve</h4><ul>'+d.questions.map(s=>'<li>'+esc(s)+'</li>').join("")+'</ul></div>';
 }
 function download(content,type,name){ const url=URL.createObjectURL(new Blob([content],{type})); const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000); }
 function exportJSON(){
@@ -96,9 +96,9 @@ $("#sample").addEventListener("click",async()=>{if(state.busy)return;lock(true);
 $("#upload-form").addEventListener("submit",async event=>{
   event.preventDefault();if(state.busy)return;const fd=new FormData();const budget=$("#budget-file").files[0],tx=$("#transactions-file").files[0];
   if([budget,tx].filter(Boolean).some(f=>f.size>5*1024*1024)){notice("Each CSV must be 5 MB or smaller.",true);return;}
-  fd.append("budget_file",budget);if(tx)fd.append("transactions_file",tx);lock(true);notice("Validating uploaded dataâ€¦");
+  fd.append("budget_file",budget);if(tx)fd.append("transactions_file",tx);lock(true);notice("Validating uploaded data…");
   try{await api("/api/upload",{method:"POST",body:fd});$("#period").value="";}catch(e){notice(e.message,true);return;}finally{lock(false);}
   await refresh();
 });
-api("/api/health").then(h=>{state.ai=h.key_configured;$("#ai-state").textContent=state.ai?"AI available on request":"Review ready Â· AI not configured";if(state.report)renderDetail();}).catch(()=>{$("#ai-state").textContent="AI availability unknown";});
+api("/api/health").then(h=>{state.ai=h.key_configured;$("#ai-state").textContent=state.ai?"AI available on request":"Review ready · AI not configured";if(state.report)renderDetail();}).catch(()=>{$("#ai-state").textContent="AI availability unknown";});
 refresh();
