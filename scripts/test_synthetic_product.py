@@ -5,6 +5,8 @@ Scripted provider responses test wiring, not model accuracy or prompt obedience.
 """
 from __future__ import annotations
 import csv
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from decimal import Decimal
 import io
 import json
@@ -121,7 +123,8 @@ def run():
 
         scripted=ScriptedMessages()
         fake_provider=SimpleNamespace(responses=scripted,close=lambda:None)
-        with patch.object(product.settings,'openai_api_key','synthetic-local-placeholder'), \
+        with patch.object(product.settings,'enable_legacy_agent',True), \
+             patch.object(product.settings,'openai_api_key','synthetic-local-placeholder'), \
              patch.object(agent_module,'OpenAI',return_value=fake_provider):
             stream=client.get('/api/investigate?period=2026-09')
         events=[json.loads(line[6:]) for line in stream.text.splitlines() if line.startswith('data: ')]
@@ -184,16 +187,16 @@ def run():
         reset=client.post('/api/reset');restored=client.get('/api/dataset').json()
         record('reset_sample',reset.status_code==200 and restored['row_count']==75 and restored['transaction_count']==78,
                'Bundled sample restored after audit',restored)
-        with patch.object(product.settings,'openai_api_key',''):
+        with patch.object(product.settings,'enable_legacy_agent',True), patch.object(product.settings,'openai_api_key',''):
             blocked=client.get('/api/investigate')
         record('missing_model_key_handled',blocked.status_code==400,'HTTP 400 with configuration error',blocked.json())
 
-    report=dict(date='2026-11-26',commit_under_test=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
+    report=dict(date=datetime.now(ZoneInfo('Asia/Kolkata')).date().isoformat(),commit_under_test=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
                 scope='CSV upload, real tools, API and real agent SSE orchestration with scripted provider',
                 live_model_tested=False,browser_ui_tested=False,external_calls=0,
                 passed=sum(f['passed'] for f in FINDINGS),failed=sum(not f['passed'] for f in FINDINGS),checks=FINDINGS)
     (REPORT/'synthetic-product-results.json').write_text(json.dumps(report,indent=2,default=str)+'\n',encoding='utf-8')
-    lines=['# Synthetic product test report','',f"Executed 26 November 2026 against the working tree based on commit `{report['commit_under_test']}` (including local fixes).",'',
+    lines=['# Synthetic product test report','',f"Executed {report['date']} against the working tree based on commit `{report['commit_under_test']}` (including local fixes).",'',
            f"**{report['passed']} checks passed; {report['failed']} failed.**",'',
            'These tests upload generated CSVs through the real FastAPI endpoint, invoke the real analytical tools and exercise the real agent/SSE loop with a scripted provider. No LLM calls, participant study or browser rendering test were performed.', '',
            '| Check | Result | Severity | Expected |','|---|---|---|---|']

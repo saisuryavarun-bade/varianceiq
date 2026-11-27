@@ -68,6 +68,8 @@ class DataStore:
             )
         if ba.empty:
             raise ValueError("budget_actuals must contain at least one row.")
+        if len(ba) > 1000 or len(tx) > 20000:
+            raise ValueError('Local review supports at most 1,000 budget rows and 20,000 transaction rows.')
         for name, frame, amounts in (
             ("budget_actuals", ba, ("budget", "actual")),
             ("transactions", tx, ("amount",)),

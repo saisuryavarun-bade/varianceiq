@@ -1,380 +1,104 @@
-/* VarianceIQ — frontend logic */
-const $ = (sel) => document.querySelector(sel);
-const fmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-
-const state = { investigating: false, eventSource: null, memoMarkdown: "" };
-
-function showView(name) {
-  document.querySelectorAll("[data-view]").forEach(el =>
-    el.classList.toggle("hidden", el.dataset.view !== name)
-  );
-}
-
-function toast(msg) {
-  const el = $("#toast");
-  el.textContent = msg;
-  el.classList.remove("hidden");
-  setTimeout(() => el.classList.add("hidden"), 5500);
-}
-
-function escapeHtml(s) {
-  return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
-
-// ---- dataset loading ----
-
-async function loadDatasetSummary() {
-  const r = await fetch("/api/dataset");
-  if (!r.ok) throw new Error("Could not load dataset summary");
-  return r.json();
-}
-
-function applyDataset(d) {
-  $("#stat-rows").textContent = d.row_count.toLocaleString();
-  $("#stat-periods").textContent = d.periods.length;
-  $("#stat-depts").textContent = d.departments.length;
-  // We don't get numeric totals from /api/dataset, so show counts
-  $("#stat-budget").textContent = `${d.row_count} lines`;
-  $("#stat-actual").textContent = `${d.transaction_count} txns`;
-  $("#stat-variance").textContent = d.source;
-  showView("investigation");
-  resetPanels();
-}
-
-async function loadSample() {
-  await fetch("/api/reset", { method: "POST" });
-  const data = await loadDatasetSummary();
-  applyDataset(data);
-}
-
-async function uploadFiles() {
-  const bva = $("#file-bva").files?.[0];
-  if (!bva) { toast("Select a Budget vs Actuals CSV first."); return; }
-  const txn = $("#file-txn").files?.[0];
-  const fd = new FormData();
-  fd.append("budget_file", bva);
-  if (txn) fd.append("transactions_file", txn);
-  else {
-    // backend requires both files — use sample transactions as fallback
-    toast("Transactions file is required. Using sample transactions.");
-    return;
-  }
-  const r = await fetch("/api/upload", { method: "POST", body: fd });
-  if (!r.ok) {
-    const detail = (await r.json().catch(() => ({}))).detail || "Upload failed.";
-    throw new Error(detail);
-  }
-  const data = await loadDatasetSummary();
-  applyDataset(data);
-}
-
-function resetPanels() {
-  state.investigating = false;
-  state.memoMarkdown = "";
-  $("#stream-body").innerHTML = '<div class="empty-state"><p>Press <strong>Start Investigation</strong> to watch the agent work.</p></div>';
-  $("#results-body").innerHTML = '<div class="empty-state"><p>The memo will appear once the agent completes its investigation.</p></div>';
-  $("#stream-status").textContent = "Idle";
-  $("#stream-status").className = "panel__status";
-  $("#results-status").textContent = "—";
-  $("#results-status").className = "panel__status";
-  $("#btn-start").disabled = false;
-  $("#btn-start").textContent = "Start Investigation";
-}
-
-// ---- investigation ----
-
-function startInvestigation() {
-  if (state.investigating) return;
-  state.investigating = true;
-  if (state.eventSource) state.eventSource.close();
-
-  $("#stream-body").innerHTML = "";
-  $("#results-body").innerHTML = '<div class="empty-state"><p>Investigating…</p></div>';
-  $("#stream-status").textContent = "Investigating";
-  $("#stream-status").className = "panel__status is-active";
-  $("#results-status").textContent = "Awaiting memo";
-  $("#btn-start").disabled = true;
-  $("#btn-start").textContent = "Investigating…";
-
-  const es = new EventSource("/api/investigate?period=YTD");
-  state.eventSource = es;
-
-  // Accumulate thinking text into a single block until a tool_call arrives
-  let thinkingBlock = null;
-
-  es.addEventListener("status", e => {
-    const data = JSON.parse(e.data);
-    appendSystemBlock(data.message);
-  });
-
-  es.addEventListener("thinking", e => {
-    const data = JSON.parse(e.data);
-    if (!thinkingBlock) {
-      thinkingBlock = document.createElement("div");
-      thinkingBlock.className = "block block--thinking";
-      thinkingBlock.innerHTML = '<div class="block__meta"><span>Reasoning</span></div><div class="block__body"></div>';
-      appendToStream(thinkingBlock);
-    }
-    thinkingBlock.querySelector(".block__body").textContent += data.text;
-    scrollStream();
-  });
-
-  es.addEventListener("tool_call", e => {
-    thinkingBlock = null; // reset for next thinking chunk
-    const data = JSON.parse(e.data);
-    appendToolCallBlock(data);
-  });
-
-  es.addEventListener("tool_result", e => {
-    const data = JSON.parse(e.data);
-    updateToolResult(data);
-  });
-
-  es.addEventListener("final", e => {
-    thinkingBlock = null;
-    const data = JSON.parse(e.data);
-    renderMemo(data.markdown);
-  });
-
-  es.addEventListener("done", () => {
-    finishInvestigation();
-    es.close();
-  });
-
-  es.addEventListener("error", e => {
-    try {
-      const data = JSON.parse(e.data);
-      toast(data.message || "Investigation error.");
-    } catch { /* SSE connection error */ }
-    failInvestigation();
-    es.close();
-  });
-
-  es.onerror = () => {
-    if (state.investigating) failInvestigation();
-    es.close();
-  };
-}
-
-// ---- stream renderers ----
-
-function appendSystemBlock(msg) {
-  const div = document.createElement("div");
-  div.className = "block block--system";
-  div.innerHTML = `<div class="block__body">${escapeHtml(msg)}</div>`;
-  appendToStream(div);
-}
-
-function appendToolCallBlock(data) {
-  const div = document.createElement("div");
-  div.className = "block block--tool";
-  div.dataset.toolId = data.id;
-
-  let detail = "";
-  const input = data.input || {};
-  if (data.name === "query_variances" || data.name === "drill_down_variance" || data.name === "summarize_vendor_spend" || data.name === "compare_period_over_period") {
-    const filters = Object.entries(input).filter(([k,v]) => v != null).map(([k,v]) => `${k}=${v}`).join(", ");
-    detail = filters ? `<div class="tool-purpose">${escapeHtml(filters)}</div>` : "";
-  } else if (data.name === "get_dataset_overview") {
-    detail = '<div class="tool-purpose">Inspecting dataset shape</div>';
-  } else if (data.name === "compose_executive_summary") {
-    detail = '<div class="tool-purpose">Preparing to write the memo</div>';
-  }
-
-  div.innerHTML = `
-    <div class="block__meta"><span class="badge">tool call</span><span class="tool-name">${escapeHtml(data.name)}()</span></div>
-    ${detail}
-    <div class="tool-result-summary" data-result-slot>↳ executing…</div>`;
-  appendToStream(div);
-}
-
-function updateToolResult(data) {
-  const block = document.querySelector(`[data-tool-id="${data.id}"]`);
-  if (!block) return;
-  const slot = block.querySelector("[data-result-slot]");
-  if (!slot) return;
-
-  const result = data.result;
-  if (result?.error) {
-    slot.innerHTML = `↳ <span style="color:var(--negative)">${escapeHtml(result.error)}</span>`;
-    return;
-  }
-
-  if (data.name === "query_variances" && result?.variances) {
-    const n = result.variance_count ?? result.variances.length;
-    slot.textContent = `↳ ${n} variance${n === 1 ? "" : "s"} found`;
-    if (result.variances.length > 0) {
-      const cols = ["period","department","account","variance","variance_pct","direction"];
-      slot.innerHTML += renderTable(cols, result.variances.slice(0, 10).map(v => cols.map(c => v[c])));
-    }
-    return;
-  }
-
-  if (data.name === "drill_down_variance" && result?.transactions) {
-    const shown = Math.min(result.transactions.length, 8);
-    const matching = result.matching_transaction_count ?? result.transaction_count;
-    const reconciliation = result.reconciliation?.status?.replaceAll("_", " ") ?? "not checked";
-    slot.textContent = `↳ Showing ${shown} of ${matching} matching transactions. Full ledger total: ${result.total_amount_exact ?? result.total_amount}. Reconciliation: ${reconciliation}.`;
-    if (result.transactions.length > 0) {
-      const cols = ["source_row","vendor","amount_exact","memo"];
-      slot.innerHTML += renderTable(cols, result.transactions.slice(0, 8).map(t => cols.map(c => t[c])));
-    }
-    return;
-  }
-
-  if (data.name === "summarize_vendor_spend" && result?.vendors) {
-    slot.textContent = `↳ ${result.vendor_count} vendors`;
-    if (result.vendors.length > 0) {
-      const cols = ["vendor","total_spend","transaction_count"];
-      slot.innerHTML += renderTable(cols, result.vendors.map(v => cols.map(c => v[c])));
-    }
-    return;
-  }
-
-  if (data.name === "compare_period_over_period") {
-    slot.textContent = `↳ ${result.period_a}: ${result.actual_a} → ${result.period_b}: ${result.actual_b} (Δ ${result.delta}, ${result.delta_pct})`;
-    return;
-  }
-
-  if (data.name === "get_dataset_overview") {
-    slot.textContent = `↳ ${result.row_count} rows, ${result.periods?.length || "?"} periods, ${result.departments?.length || "?"} depts · Budget: ${result.total_budget} · Variance: ${result.total_variance}`;
-    // Update ribbon with real numbers
-    if (result.total_budget) $("#stat-budget").textContent = result.total_budget;
-    if (result.total_actual) $("#stat-actual").textContent = result.total_actual;
-    if (result.total_variance) { $("#stat-variance").textContent = result.total_variance; }
-    return;
-  }
-
-  if (data.name === "compose_executive_summary") {
-    slot.textContent = "↳ checklist received — writing memo";
-    return;
-  }
-
-  slot.textContent = "↳ done";
-}
-
-function renderTable(columns, rows) {
-  const head = columns.map(c => `<th>${escapeHtml(c)}</th>`).join("");
-  const body = rows.map(row => `<tr>${row.map(v => `<td>${escapeHtml(v)}</td>`).join("")}</tr>`).join("");
-  return `<table class="tool-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
-}
-
-function appendToStream(el) {
-  const body = $("#stream-body");
-  body.appendChild(el);
-  scrollStream();
-}
-
-function scrollStream() {
-  const body = $("#stream-body");
-  body.scrollTop = body.scrollHeight;
-}
-
-// ---- memo ----
-
-function renderMemo(markdown) {
-  state.memoMarkdown = markdown;
-  const body = $("#results-body");
-  body.innerHTML = "";
-
-  const div = document.createElement("div");
-  div.className = "memo";
-
-  // Simple markdown → HTML (handles headers, bold, lists, paragraphs)
-  const html = markdownToHtml(markdown);
-
-  div.innerHTML = `
-    <p class="memo__eyebrow">Executive Memorandum</p>
-    <div class="memo__content">${html}</div>
-    <div class="memo__cta">
-      <button class="btn btn--secondary btn--small" id="btn-copy">Copy to Clipboard</button>
-      <button class="btn btn--secondary btn--small" id="btn-download">Download .md</button>
-    </div>`;
-  body.appendChild(div);
-  body.scrollTop = 0;
-
-  $("#results-status").textContent = "Memo ready";
-  $("#results-status").className = "panel__status is-done";
-
-  div.querySelector("#btn-copy").addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText(markdown); toast("Copied!"); } catch { toast("Copy failed."); }
-  });
-  div.querySelector("#btn-download").addEventListener("click", () => {
-    const blob = new Blob([markdown], { type: "text/markdown" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "variance_memo.md";
-    a.click();
-    URL.revokeObjectURL(a.href);
-  });
-}
-
-function markdownToHtml(md) {
-  // Minimal markdown parser — good enough for the agent's output
-  return md
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^\- (.+)$/gm, '<li>$1</li>')
-    .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
-    .replace(/(<li>.*<\/li>\n?)+/g, match => `<ul>${match}</ul>`)
-    .replace(/\n{2,}/g, '</p><p>')
-    .replace(/^(.)/gm, (m, c) => {
-      if (c === '<') return c;
-      return c;
-    });
-}
-
-function finishInvestigation() {
-  state.investigating = false;
-  $("#stream-status").textContent = "Done";
-  $("#stream-status").className = "panel__status is-done";
-  $("#btn-start").disabled = false;
-  $("#btn-start").textContent = "Re-run Investigation";
-}
-
-function failInvestigation() {
-  state.investigating = false;
-  if (!state.memoMarkdown) toast("Investigation failed or disconnected.");
-  $("#stream-status").textContent = "Failed";
-  $("#stream-status").className = "panel__status";
-  $("#btn-start").disabled = false;
-  $("#btn-start").textContent = "Retry Investigation";
-}
-
-// ---- bootstrap ----
-
-async function bootstrap() {
+/* Deterministic review is authoritative. Optional AI is a separate, unverified draft. */
+const $ = s => document.querySelector(s);
+const state = { report: null, selected: null, ai: false, busy: false, pending: null, notes: {}, drafts: {} };
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const amount = v => { if (v == null) return "Not available"; const [n,f=""] = String(v).split("."); return n.replace(/\B(?=(\d{3})+(?!\d))/g,",") + "." + (f.replace(/0+$/,"") || "").padEnd(2,"0"); };
+const label = v => ({matched:"Reconciled",mismatch:"Mismatch",insufficient_evidence:"Insufficient evidence",above_budget:"Above budget",below_budget:"Below budget",on_budget:"On budget"}[v] || v.replaceAll("_"," "));
+function notice(text, error=false){ $("#notice").textContent=text; $("#notice").className=error?"error":""; }
+async function api(url,options){ const response=await fetch(url,options); const body=await response.json(); if(!response.ok) throw new Error(typeof body.detail==="string"?body.detail:body.error || "Request failed. Check your inputs and try again."); return body; }
+function lock(busy){ state.busy=busy; ["refresh","sample","export","csv"].forEach(id=>$("#"+id).disabled=busy); $("#upload-form button").disabled=busy; }
+async function refresh(){
+  if(state.busy) return;
+  const threshold=$("#threshold").value;
+  if(threshold==="" || !Number.isFinite(Number(threshold)) || Number(threshold)<0){ notice("Enter a nonnegative materiality threshold.",true); return; }
+  lock(true); notice("Calculating your reviewâ€¦");
   try {
-    const h = await fetch("/api/health").then(r => r.json());
-    $("#model-badge").textContent = `Model · ${h.model}`;
-  } catch {}
-
-  $("#btn-sample").addEventListener("click", async () => {
-    $("#btn-sample").disabled = true;
-    try { await loadSample(); } catch (e) { toast(e.message); }
-    finally { $("#btn-sample").disabled = false; }
-  });
-
-  // Upload flow: require both files via the existing API
-  $("#file-bva").addEventListener("change", async () => {
-    if ($("#file-bva").files?.[0] && $("#file-txn").files?.[0]) {
-      try { await uploadFiles(); } catch (e) { toast(e.message); }
-    }
-  });
-  $("#file-txn").addEventListener("change", async () => {
-    if ($("#file-bva").files?.[0] && $("#file-txn").files?.[0]) {
-      try { await uploadFiles(); } catch (e) { toast(e.message); }
-    }
-  });
-
-  $("#btn-start").addEventListener("click", startInvestigation);
-  $("#btn-reset").addEventListener("click", () => {
-    if (state.eventSource) state.eventSource.close();
-    state.investigating = false;
-    showView("landing");
-  });
+    const params=new URLSearchParams({min_abs_variance:threshold}); if($("#period").value) params.set("period",$("#period").value);
+    const report=await api("/api/review?"+params);
+    state.report=report; state.selected=report.findings.some(f=>f.id===state.selected)?state.selected:report.findings[0]?.id;
+    $("#period").innerHTML='<option value="">All loaded periods</option>'+report.available_periods.map(p=>'<option value="'+esc(p)+'">'+esc(p)+'</option>').join("");
+    if(report.policy.period && !report.available_periods.includes(report.policy.period)){ const option=new Option(report.policy.period,report.policy.period); $("#period").add(option); }
+    $("#period").value=report.policy.period || "";
+    render(); notice(report.status==="no_data"?"No budget records for this period. Missing data has not been treated as observed zero.":"Review ready. No AI was used.");
+  } catch(error){ notice(error.message,true); }
+  finally{ lock(false); $("#export").disabled=!state.report; $("#csv").disabled=!state.report; }
 }
-
-document.addEventListener("DOMContentLoaded", bootstrap);
+function render(){
+  const r=state.report,t=r.totals;
+  $("#metrics").innerHTML=[["Recorded budget",amount(t.budget_exact)],["Recorded actual",amount(t.actual_exact)],["Actual âˆ’ budget",amount(t.variance_exact)],["Material findings",t.material_count+" / "+t.group_count]].map(([name,value])=>'<div class="metric"><span>'+name+'</span><strong>'+(r.status==="no_data"?"Not available":esc(value))+'</strong></div>').join("");
+  $("#coverage").textContent=t.matched_count+" reconciled Â· "+t.mismatch_count+" mismatches Â· "+t.insufficient_count+" with insufficient evidence";
+  const warnings=[];
+  if(r.quality.unmapped_transaction_rows.length) warnings.push(r.quality.unmapped_transaction_rows.length+" transaction rows have no matching budget scope; see source rows in the exported packet.");
+  if(r.quality.duplicate_candidate_rows) warnings.push(r.quality.duplicate_candidate_rows+" transaction rows belong to identical-row duplicate candidates. They remain in totals.");
+  $("#quality").textContent=warnings.join(" ");
+  $("#methods").innerHTML=r.methodology.map(m=>"<li>"+esc(m)+"</li>").join("");
+  $("#identity").textContent="Engine "+r.engine_version+" Â· Review "+r.review_id;
+  renderQueue(); renderDetail();
+}
+function renderQueue(){
+  if(!state.report) return;
+  const search=$("#search").value.toLowerCase();
+  const findings=state.report.findings.filter(f=>(!$("#material-only").checked || f.material) && (f.department+" "+f.account+" "+f.period).toLowerCase().includes(search));
+  $("#findings").innerHTML=findings.map(f=>'<tr class="'+(f.id===state.selected?"selected":"")+'"><td><button class="row-button" data-finding="'+esc(f.id)+'" aria-pressed="'+(f.id===state.selected)+'">'+esc(f.account)+'</button><small>'+esc(f.department)+" Â· "+esc(f.period)+(f.material?" Â· Material":"")+'</small></td><td class="amount">'+esc(amount(f.variance_exact))+'<small>'+esc(label(f.direction))+'</small></td><td><span class="pill '+f.evidence.reconciliation.status+'">'+label(f.evidence.reconciliation.status)+'</span></td></tr>').join("");
+  $("#empty").classList.toggle("hidden",findings.length>0);
+  $("#findings").querySelectorAll("[data-finding]").forEach(button=>button.addEventListener("click",()=>{state.selected=button.dataset.finding;renderQueue();renderDetail();}));
+}
+function noteKey(){return state.report.review_id+":"+state.selected;}
+function renderDetail(){
+  const f=state.report.findings.find(f=>f.id===state.selected);
+  if(!f){ $("#detail").innerHTML='<div class="empty">No finding selected. Choose a period with data.</div>'; return; }
+  const e=f.evidence,rec=e.reconciliation,c=f.comparison,key=noteKey(),note=state.notes[key] || {};
+  const flags=f.flags.map(flag=>'<div class="flag">'+esc(label(flag))+'</div>').join("");
+  $("#detail").innerHTML='<span class="scope">'+esc(f.period)+" / "+esc(f.department)+'</span><h2>'+esc(f.account)+'</h2><span class="pill '+rec.status+'">'+label(rec.status)+'</span><div class="detail-stats">'+[["Budget",f.budget_exact],["Actual",f.actual_exact],["Variance",f.variance_exact]].map(([n,v])=>'<div><small>'+n+'</small><strong>'+esc(amount(v))+'</strong></div>').join("")+'</div><p class="subtle">'+esc(label(f.direction))+" Â· "+(f.variance_percent===null?"Percentage unavailable: zero budget.":esc(Number(f.variance_percent).toFixed(2))+"% of absolute budget.")+'</p>'+flags+
+  '<h3>Prior-month comparison</h3><p class="subtle">'+(c.status==="missing"?"No matching "+esc(c.period)+" records. No change is calculated.":esc(c.period)+" actual: "+esc(amount(c.actual_exact))+" Â· Change: "+esc(amount(c.change_exact)))+'</p>'+
+  '<h3>Transaction evidence</h3><div class="evidence-summary">Full matching ledger: <strong>'+esc(amount(e.total_amount_exact))+'</strong><br>Ledger minus recorded actual: '+esc(amount(rec.ledger_minus_actual_exact))+'<br>Showing '+e.transaction_count+" of "+e.matching_transaction_count+" transactions Â· Displayed subtotal: "+esc(amount(e.returned_amount_exact))+'</div>'+
+  '<details><summary>Inspect transaction rows and source references</summary><div class="table-wrap"><table><thead><tr><th>Source / vendor</th><th>Amount</th><th>Memo</th></tr></thead><tbody>'+e.transactions.map(t=>'<tr><td>Row '+t.source_row+" Â· "+esc(t.vendor)+'<span class="source-id">'+esc(t.source_id)+'</span></td><td class="amount">'+esc(amount(t.amount_exact))+'</td><td>'+esc(t.memo)+'</td></tr>').join("")+'</tbody></table></div>'+(e.transactions.length?"":'<p class="subtle">No matching transaction evidence was supplied.</p>')+'</details>'+
+  '<details><summary>Inspect budget source references</summary>'+f.budget_evidence.map(b=>'<p class="subtle">Row '+b.source_row+' · Budget '+esc(amount(b.budget))+' · Actual '+esc(amount(b.actual))+'</p><span class="source-id">'+esc(b.source_id)+'</span>').join("")+'<p class="subtle">One-based loaded budget data rows, excluding the CSV header.</p></details>'+
+  '<p class="subtle">'+esc(f.conclusion)+'</p>'+
+  '<section class="review-note"><label for="note">Analyst note</label><textarea id="note" placeholder="Record context, missing evidence, or follow-up actions.">'+esc(note.text || "")+'</textarea><label class="check"><input id="reviewed" type="checkbox" '+(note.reviewed?"checked":"")+'>I have reviewed this finding</label><small class="subtle">Personal review marker, not an approval or audit signature. Included in JSON exports.</small></section>'+
+  '<section class="ai-box"><h3>Optional AI investigation</h3><p class="subtle">Sends this finding and up to 25 supporting transaction rows to OpenAI. Uses API credits. The result is a draft for your review.</p><button id="investigate" '+(!state.ai || state.pending?"disabled":"")+'>'+(state.pending?"AI investigation runningâ€¦":"Investigate with AI")+'</button><p class="subtle">'+(state.ai?"One bounded request. Your calculated review is unchanged.":"AI is unavailable. Configure a server API key to enable it; all review features work without one.")+'</p><div id="draft"></div></section>';
+  $("#note").addEventListener("input",saveNote); $("#reviewed").addEventListener("change",saveNote);
+  $("#investigate").addEventListener("click",investigate);
+  if(state.drafts[key]) renderDraft(state.drafts[key]);
+}
+function saveNote(){ state.notes[noteKey()]={text:$("#note").value,reviewed:$("#reviewed").checked}; }
+async function investigate(){
+  if(!state.ai || state.pending) return;
+  const r=state.report,id=state.selected,key=noteKey(); state.pending=key; renderDetail();
+  try{
+    const result=await api("/api/review/investigate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({review_id:r.review_id,finding_id:id,period:r.policy.period,min_abs_variance:r.policy.min_abs_variance})});
+    state.drafts[key]=result.draft;
+    notice("AI draft ready. Source-reference existence was checked; claim accuracy still requires review.");
+  } catch(error){notice(error.message,true);}
+  finally{state.pending=null; if(state.report) renderDetail();}
+}
+function renderDraft(d){
+  $("#draft").innerHTML='<div class="draft"><strong>AI draft Â· Not verified</strong><p>'+esc(d.limitation)+'</p><h4>Suggested observations</h4><ul>'+d.observations.map(o=>'<li>'+esc(o.claim)+o.source_ids.map(s=>'<span class="source-id">'+esc(s)+'</span>').join("")+'</li>').join("")+'</ul><h4>Hypotheses, not established causes</h4><ul>'+d.hypotheses.map(s=>'<li>'+esc(s)+'</li>').join("")+'</ul><h4>Questions to resolve</h4><ul>'+d.questions.map(s=>'<li>'+esc(s)+'</li>').join("")+'</ul></div>';
+}
+function download(content,type,name){ const url=URL.createObjectURL(new Blob([content],{type})); const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000); }
+function exportJSON(){
+  const r=state.report;if(!r)return;
+  const annotations=r.findings.map(f=>({finding_id:f.id,...(state.notes[r.review_id+":"+f.id]||{}),ai_draft:state.drafts[r.review_id+":"+f.id]||null}));
+  download(JSON.stringify({...r,analyst_annotations:annotations},null,2),"application/json","varianceiq-review-"+r.review_id.slice(0,12)+".json");
+}
+function exportCSV(){
+  const cell=(v,text=false)=>{ let s=String(v??"");if(text && /^[\s]*[=+\-@]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"'; };
+  const cols=["period","department","account","budget_exact","actual_exact","variance_exact","direction","material","reconciliation"];
+  const rows=state.report.findings.map(f=>cols.map((c,i)=>cell(c==="reconciliation"?f.evidence.reconciliation.status:f[c],i<3 || i>5)).join(","));
+  download(cols.join(",")+"\r\n"+rows.join("\r\n"),"text/csv;charset=utf-8","varianceiq-findings.csv");
+}
+$("#refresh").addEventListener("click",refresh);
+$("#search").addEventListener("input",renderQueue);
+$("#material-only").addEventListener("change",renderQueue);
+$("#export").addEventListener("click",exportJSON);
+$("#csv").addEventListener("click",exportCSV);
+$("#sample").addEventListener("click",async()=>{if(state.busy)return;lock(true);try{await api("/api/reset",{method:"POST"});$("#period").value="";}catch(e){notice(e.message,true);return;}finally{lock(false);}await refresh();});
+$("#upload-form").addEventListener("submit",async event=>{
+  event.preventDefault();if(state.busy)return;const fd=new FormData();const budget=$("#budget-file").files[0],tx=$("#transactions-file").files[0];
+  if([budget,tx].filter(Boolean).some(f=>f.size>5*1024*1024)){notice("Each CSV must be 5 MB or smaller.",true);return;}
+  fd.append("budget_file",budget);if(tx)fd.append("transactions_file",tx);lock(true);notice("Validating uploaded dataâ€¦");
+  try{await api("/api/upload",{method:"POST",body:fd});$("#period").value="";}catch(e){notice(e.message,true);return;}finally{lock(false);}
+  await refresh();
+});
+api("/api/health").then(h=>{state.ai=h.key_configured;$("#ai-state").textContent=state.ai?"AI available on request":"Review ready Â· AI not configured";if(state.report)renderDetail();}).catch(()=>{$("#ai-state").textContent="AI availability unknown";});
+refresh();

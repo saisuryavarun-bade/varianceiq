@@ -1,162 +1,60 @@
-# VarianceIQ — Autonomous FP&A Variance Investigation Agent
+# VarianceIQ — evidence-first financial review
 
-> Upload your Budget vs. Actuals. An autonomous agent investigates the numbers — drilling into departments, accounts, and transactions — and produces the executive memo your FP&A team would spend half a day on.
+Upload budget-versus-actuals data and review calculated variances, transaction reconciliation, and missing evidence. The entire review works without an API key. Optional OpenAI assistance produces a separate, unverified draft for one selected finding.
 
----
+## Run locally
 
-## What it does
-
-VarianceIQ reproduces the workflow a senior FP&A analyst runs at every month-end close:
-
-1. **Triage** — surface the largest variances by department and account
-2. **Drill** — inspect transaction-level detail to identify the actual driver (vendor, campaign, project)
-3. **Compare** — check whether a variance is a one-time spike or a sustained trend across periods
-4. **Synthesize** — write a CFO-ready executive memo with dollar figures, root causes, and recommended actions
-
-The agent is fully autonomous. You upload data, it investigates, and it produces a memo. Every step is streamed live to the UI so you can see exactly what it queried, what it found, and how it reasoned.
-
-## Why this is interesting
-
-- **Real agentic behavior, not a chatbot.** The agent uses native [OpenAI tool use](https://developers.openai.com/api/docs/guides/function-calling) to autonomously plan and execute a multi-step investigation. There is a custom orchestration loop — no LangChain, no LlamaIndex — so reviewers see exactly what happens in ~130 lines of [`app/agent.py`](app/agent.py).
-- **6 purpose-built tools.** `get_dataset_overview`, `query_variances`, `drill_down_variance`, `summarize_vendor_spend`, `compare_period_over_period`, `compose_executive_summary`. Each tool has a clear behavioral description that shapes the agent's investigation strategy.
-- **Production patterns.** SSE streaming, structured error payloads, graceful tool dispatch, bounded iteration limits, Docker + Render deploy config, CI on push.
-- **Real domain logic.** The system prompt encodes how a senior analyst thinks (materiality thresholds, driver vs. symptom distinction, severity flags). The sample dataset has deliberately-planted variance patterns that produce a genuinely useful memo.
-
-## Architecture
-
-```
-   ┌──────────────────────────┐
-   │  Browser (vanilla JS)    │
-   │  ─ uploads CSV           │
-   │  ─ consumes SSE stream   │
-   └────────────┬─────────────┘
-                │  HTTP / SSE
-   ┌────────────▼─────────────┐
-   │  FastAPI                 │
-   │  ─ /api/upload           │
-   │  ─ /api/dataset          │
-   │  ─ /api/investigate      │  (Server-Sent Events)
-   └────────────┬─────────────┘
-                │
-   ┌────────────▼─────────────────────────────┐
-   │  Agent loop (OpenAI native tool use)  │
-   │                                          │
-   │   plan ──► call tool ──► observe ──► …   │
-   │                                          │
-   └────────────┬─────────────────────────────┘
-                │
-   ┌────────────▼──────────────────────────┐
-   │  Tool dispatcher                      │
-   │   ─ get_dataset_overview              │  ┌─────────────────┐
-   │   ─ query_variances                   │──► Pandas DataFrames│
-   │   ─ drill_down_variance               │  │ (in-memory)     │
-   │   ─ summarize_vendor_spend            │  └─────────────────┘
-   │   ─ compare_period_over_period        │
-   │   ─ compose_executive_summary         │
-   └───────────────────────────────────────┘
-```
-
-## Quick start
-
-### Option 1 — Docker (one command)
+Requires Python 3.10 or later.
 
 ```bash
-git clone https://github.com/<you>/varianceiq.git
-cd varianceiq
-python scripts/configure_model.py
-docker compose up --build
-```
-
-Visit **http://localhost:8000** and click *Try the sample dataset*.
-
-### Option 2 — Local Python
-
-```bash
-git clone https://github.com/<you>/varianceiq.git
-cd varianceiq
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv
+# Activate .venv using your shell's activation command.
 pip install -r requirements.txt
-python scripts/generate_sample_data.py
-python scripts/configure_model.py
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-You'll need an [OpenAI API key](https://platform.openai.com/api-keys). API usage is billed according to your selected model and token usage; no fixed per-investigation cost is guaranteed.
+Open http://127.0.0.1:8000. The fictional bundled dataset loads immediately. Docker users can run `docker compose up --build`; the host port is bound to localhost and no key is required.
 
-## Bringing your own data
+## Review workflow
 
-Upload two CSVs:
+1. Load the sample or upload a budget CSV and, optionally, transaction CSV.
+2. Select a period and an absolute materiality threshold.
+3. Inspect ranked findings, prior-month comparisons, and evidence gaps.
+4. Expand transaction evidence and source references. Add analyst notes and a personal reviewed marker.
+5. Export a JSON packet containing the complete loaded input, calculation policy, findings, references, notes, and any AI drafts. CSV export includes all findings in the selected report, not just the search-filtered rows.
+6. Optionally request an AI draft for a selected finding. Only its evidence packet is sent to OpenAI. Citation existence is checked; factual support and causal claims remain subject to human review.
 
-| File | Columns | Required |
-|---|---|---|
-| Budget vs Actuals | `period, department, account, budget, actual` | Yes |
-| Transactions | `date, period, department, account, vendor, amount, memo` | Yes |
+Notes are held in the browser tab and lost on reload unless exported. They are not authenticated approvals. A JSON export includes all loaded periods because comparisons depend on prior-period data; handle the packet as financial data.
 
-## What the sample investigation finds
+## Input contract
 
-The bundled dataset describes "Lumera Health" (fictional Series-C SaaS), Q3 2025. Variances are deliberately planted to produce a useful narrative:
+Budget CSV: `period,department,account,budget,actual`.
 
-- **Subscription revenue beat plan by ~6%** — enterprise renewals closed early
-- **Engineering salaries underspent ~$217k** — four senior reqs unfilled all quarter
-- **Engineering contractors overspent ~$78k** — backfill for those open reqs (offsetting, structural)
-- **Paid Search Non-Brand overspent ~$138k** — Google Ads bid expansion across all three months
-- **Legal fees overspent ~$63k** — one-time Cooley LLP vendor dispute settlement in August
-- **Sales commissions overspent ~$56k** — favorable; tracks revenue beat
+Optional transaction CSV: `date,period,department,account,vendor,amount,memo`.
 
-## Project layout
+Periods use YYYY-MM. Missing, nonnumeric, and nonfinite financial amounts are rejected. Negative amounts and observed zeros are valid. Each file is limited to 5 MB, with at most 1,000 budget rows and 20,000 transaction rows. Materiality thresholds must be between zero and 1e18. Without a ledger, reconciliation is insufficient evidence, never a verified zero.
 
-```
-varianceiq/
-├── app/
-│   ├── main.py             # FastAPI app + SSE endpoint
-│   ├── agent.py            # orchestration loop (~130 lines)
-│   ├── tools/
-│   │   ├── definitions.py  # tool schemas for OpenAI API
-│   │   └── handlers.py     # tool implementations (pandas)
-│   ├── data_loader.py      # CSV ingestion + validation
-│   ├── prompts.py          # system prompt
-│   └── config.py           # env-driven settings
-├── static/                 # single-page app, no build step
-│   ├── index.html
-│   ├── styles.css
-│   └── app.js
-├── scripts/
-│   └── generate_sample_data.py
-├── data/                   # generated sample CSVs
-├── tests/                  # 15 tests, no LLM calls
-├── docs/
-│   ├── architecture.md
-│   └── prompt_design.md
-├── Dockerfile
-├── docker-compose.yml
-├── render.yaml             # one-click Render.com deploy
-├── .github/workflows/test.yml
-└── README.md
-```
+Variance is actual minus budget. The UI uses neutral above/below budget labels because account classification is not supplied. Combined revenue and expense totals are not profit. No currency is inferred or converted.
 
-## Tests
+## Optional AI
+
+Run `python scripts/configure_model.py` in a terminal to enter an OpenAI key without echo. It is saved in the ignored local .env. Restart the server. OPENAI_MODEL defaults to gpt-4.1-mini.
+
+The finding-level action makes one request, caps output at 2,500 tokens, disables SDK retries, and allows one concurrent request per server process. Requests use store=false. That is not a claim of zero provider retention. Model access and API credits are required. No live accuracy results are claimed.
+
+The earlier unrestricted SSE agent is retained only as an experimental baseline and disabled by default. ENABLE_LEGACY_AGENT=true explicitly enables it; the new UI never calls it.
+
+## Validation
 
 ```bash
-pytest tests/ -v
+python -m pytest -q
+python scripts/test_synthetic_product.py
 ```
 
-15 tests covering data loading, column validation, all 6 tools, error handling, and API endpoints. Tests do not call the LLM, so they run in ~1 second offline.
+Tests exercise deterministic arithmetic, missing data, snapshots, upload atomicity and limits, selected evidence scope, stale-report rejection, citation checks, and SDK behavior using local mocks. The synthetic script also tests the legacy SSE baseline under explicit opt-in. Neither makes live model calls.
 
-## Tech choices
+## Deployment boundary
 
-| Decision | Why |
-|---|---|
-| OpenAI native tool use (no LangChain) | Reviewers see the actual loop. ~130 lines, no hidden behavior. |
-| 6 purpose-built tools (not raw SQL) | Each tool has a clear purpose. Fewer failure modes than free-form SQL. |
-| Pandas in-memory | Zero infra. Simple. Fast for the dataset sizes FP&A teams work with. |
-| SSE instead of WebSockets | Agent stream is one-way. SSE is simpler and survives proxies. |
-| Vanilla JS frontend | One file, no build, recruiters can read every line. |
-| Sonnet 4.6 default | Strong agentic tool use. ~$0.05 per investigation. |
+This is a private, single-user prototype. One dataset is held in memory per process; there is no authentication, durable audit log, or tenant isolation. Run one worker locally. Do not expose uploads publicly. Existing Render configuration is historical deployment scaffolding, not a production-security guarantee.
 
-## License
-
-MIT
-
----
-
-<p align="center"><sub>Built as a portfolio piece. Sample data is synthetic.</sub></p>
+See [architecture](docs/architecture.md), [evidence contract](docs/evidence-contract.md), and [model testing](docs/model-testing.md). Before public use, implement authenticated ownership, persistent isolated storage, deployment-wide quotas, retention/deletion controls, and operational monitoring.

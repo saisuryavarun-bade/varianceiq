@@ -1,6 +1,6 @@
 {
-  "date": "2026-11-26",
-  "commit_under_test": "6f8809faa166dd9b7035dc789079f23809d7e502",
+  "date": "2026-11-27",
+  "commit_under_test": "2e57bce8fdd3aca86b00c0edc272748b6d430534",
   "scope": "CSV upload, real tools, API and real agent SSE orchestration with scripted provider",
   "live_model_tested": false,
   "browser_ui_tested": false,

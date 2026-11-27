@@ -12,9 +12,10 @@ class Settings(BaseSettings):
 
     openai_api_key: str = ""
     openai_model: str = "gpt-4.1-mini"
-    host: str = "0.0.0.0"
+    host: str = "127.0.0.1"
     port: int = 8000
     debug: bool = False
+    enable_legacy_agent: bool = False
 
     # Project paths
     project_root: Path = Path(__file__).resolve().parent.parent
@@ -26,7 +27,7 @@ class Settings(BaseSettings):
     max_tokens_per_turn: int = 4096
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=Path(__file__).resolve().parent.parent / '.env',
         env_file_encoding="utf-8",
         extra="ignore",
     )

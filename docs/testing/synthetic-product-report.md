@@ -1,6 +1,6 @@
 # Synthetic product test report
 
-Executed 26 November 2026 against the working tree based on commit `6f8809faa166dd9b7035dc789079f23809d7e502` (including local fixes).
+Executed 2026-11-27 against the working tree based on commit `2e57bce8fdd3aca86b00c0edc272748b6d430534` (including local fixes).
 
 **25 checks passed; 0 failed.**
 

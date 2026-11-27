@@ -1,5 +1,7 @@
 # Real model testing
 
+The main product now performs a deterministic review first. Use its finding-level “Investigate with AI” button to test the new scoped adapter. It returns an unverified structured draft and checks whether its references resolve. No live evaluation of that adapter has been completed. The command below exercises the earlier autonomous agent as a research baseline, not the new product workflow.
+
 The product uses the OpenAI Responses API, with `gpt-4.1-mini` as the configurable default. Create an API key at https://platform.openai.com/api-keys. A chat subscription does not automatically configure this application. See the [OpenAI quickstart](https://developers.openai.com/api/docs/quickstart).
 
 From this repository, run `python scripts/configure_model.py` in an interactive terminal and enter your provider key at the hidden prompt. The helper writes only to the ignored local `.env` and refuses to replace an existing key entry. Never paste credentials into chat or commit them. Environment variables take precedence over `.env`. Restart a running server after configuring it.
